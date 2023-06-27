@@ -1,0 +1,54 @@
+{
+  "name": "@mongosh/build",
+  "version": "0.0.0-dev.0",
+  "private": true,
+  "description": "MongoDB Shell Build Tools",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mongodb-js/mongosh.git"
+  },
+  "config": {
+    "unsafe-perm": true
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "prepublish": "npm run compile",
+    "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 30000 -r ts-node/register \"./src/**/*.spec.ts\"",
+    "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
+    "lint": "eslint --report-unused-disable-directives \"./{src,test}/**/*.{js,ts,tsx}\"",
+    "check": "npm run lint && depcheck --skip-missing=true",
+    "evergreen-release": "ts-node -r ../../scripts/import-expansions.js src/index.ts",
+    "release": "ts-node src/index.ts trigger-release"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.1"
+  },
+  "dependency-check": {
+    "entries": [
+      "src/**/*.js"
+    ]
+  },
+  "mongosh": {
+    "unitTestsOnly": true
+  },
+  "devDependencies": {
+    "@types/command-exists": "^1.2.0",
+    "@types/cross-spawn": "^6.0.2",
+    "@types/es-aggregate-error": "^1.0.2",
+    "cross-spawn": "^7.0.3",
+    "sinon-chai": "^3.5.0"
+  },
+  "dependencies": {
+    "@mongodb-js/dl-center": "^1.0.1",
+    "@mongodb-js/devtools-github-repo": "^1.0.1",
+    "node-fetch": "^2.6.0",
+    "pkg-up": "^3.1.0",
+    "es-aggregate-error": "^1.0.9"
+  }
+}

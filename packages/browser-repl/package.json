@@ -1,0 +1,103 @@
+{
+  "name": "@mongosh/browser-repl",
+  "version": "0.0.0-dev.0",
+  "description": "Browser presentation component for Mongo Shell",
+  "engines": {
+    "node": ">=14.15.1"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "require": "./lib/index.js"
+    },
+    "./shell": {
+      "types": "./lib/components/shell.d.ts",
+      "require": "./lib/components/shell.js"
+    },
+    "./package.json": {
+      "require": "./package.json"
+    }
+  },
+  "scripts": {
+    "start": "webpack serve --config ./config/webpack.config.watch.js",
+    "clean": "rimraf ./lib",
+    "preprepublish": "rimraf ./lib",
+    "prepublish": "npm run compile",
+    "test": "karma start ./config/karma.conf.js --colors",
+    "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
+    "lint": "eslint --report-unused-disable-directives \"./{src,test}/**/*.{js,ts,tsx}\"",
+    "check": "npm run lint && npm run depcheck",
+    "depcheck": "depcheck",
+    "compile": "tsc -p tsconfig.json"
+  },
+  "config": {
+    "unsafe-perm": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mongodb-js/mongosh.git"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "mongosh": {
+    "unitTestsOnly": true,
+    "variants": [
+      "darwin"
+    ]
+  },
+  "dependencies": {
+    "@mongosh/browser-runtime-core": "0.0.0-dev.0",
+    "@mongosh/errors": "0.0.0-dev.0",
+    "@mongosh/history": "0.0.0-dev.0",
+    "@mongosh/i18n": "0.0.0-dev.0",
+    "@mongosh/node-runtime-worker-thread": "0.0.0-dev.0",
+    "@mongosh/service-provider-core": "0.0.0-dev.0",
+    "numeral": "^2.0.6",
+    "text-table": "^0.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.19.6",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "@mongodb-js/compass-components": "*",
+    "@mongodb-js/compass-editor": "*",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.8",
+    "@types/numeral": "^2.0.2",
+    "@types/react": "^16.9.17",
+    "@types/react-dom": "^18.0.8",
+    "@types/sinon": "^7.5.1",
+    "@types/sinon-chai": "^3.2.3",
+    "@types/text-table": "^0.2.1",
+    "@wojtekmaj/enzyme-adapter-react-17": "^0.8.0",
+    "babel-loader": "^8.3.0",
+    "buffer": "^6.0.3",
+    "enzyme": "^3.11.0",
+    "html-webpack-plugin": "^5.5.0",
+    "karma": "^6.3.9",
+    "karma-webpack": "^5.0.0",
+    "path-browserify": "^1.0.1",
+    "prop-types": "^15.7.2",
+    "puppeteer": "^2.0.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-refresh": "^0.14.0",
+    "rimraf": "^3.0.2",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.5",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^4.0.0",
+    "webpack-dev-server": "^4.11.1"
+  },
+  "peerDependencies": {
+    "@mongodb-js/compass-components": "*",
+    "@mongodb-js/compass-editor": "*",
+    "prop-types": "^15.7.2",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  }
+}
