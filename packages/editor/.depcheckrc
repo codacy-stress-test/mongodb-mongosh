@@ -1,0 +1,12 @@
+ignores:
+ - '@mongodb-js/prettier-config-devtools'
+ - '@typescript-eslint/parser'
+ - '@typescript-eslint/eslint-plugin'
+ - chai
+ - sinon-chai
+ - sinon
+ - ts-sinon
+ - eslint-plugin-mocha
+ - eslint-config-mongodb-js
+ignore-patterns:
+ - .eslintrc.js

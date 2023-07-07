@@ -2,7 +2,7 @@ import path from 'path';
 import chai, { expect } from 'chai';
 import sinon from 'sinon';
 import sinonChai from 'sinon-chai';
-import { MongoshBus } from '@mongosh/types';
+import type { MongoshBus } from '@mongosh/types';
 import { startTestServer } from '../../../testing/integration-testing-hooks';
 import { WorkerRuntime } from '../dist/index';
 
@@ -10,30 +10,30 @@ import type { DevtoolsConnectOptions } from '@mongosh/service-provider-server';
 
 export const dummyOptions: DevtoolsConnectOptions = Object.freeze({
   productName: 'Test Product',
-  productDocsLink: 'https://example.com/'
+  productDocsLink: 'https://example.com/',
 });
 
 chai.use(sinonChai);
 
 function createMockEventEmitter() {
-  return (sinon.stub({ on() {}, emit() {} }) as unknown) as MongoshBus;
+  return sinon.stub({ on() {}, emit() {} }) as unknown as MongoshBus;
 }
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-describe('WorkerRuntime', () => {
+describe('WorkerRuntime', function () {
   let runtime: WorkerRuntime;
 
-  afterEach(async() => {
+  afterEach(async function () {
     if (runtime) {
       await runtime.terminate();
       runtime = null;
     }
   });
 
-  describe('spawn errors', () => {
+  describe('spawn errors', function () {
     const brokenScript = path.resolve(
       __dirname,
       '..',
@@ -41,32 +41,17 @@ describe('WorkerRuntime', () => {
       'script-that-throws.js'
     );
 
-    afterEach(() => {
-      delete process.env.CHILD_PROCESS_PROXY_SRC_PATH_DO_NOT_USE_THIS_EXCEPT_FOR_TESTING;
+    afterEach(function () {
+      delete process
+        .env.CHILD_PROCESS_PROXY_SRC_PATH_DO_NOT_USE_THIS_EXCEPT_FOR_TESTING;
     });
 
-    it('should return init error if child process failed to spawn', async() => {
-      process.env.CHILD_PROCESS_PROXY_SRC_PATH_DO_NOT_USE_THIS_EXCEPT_FOR_TESTING = brokenScript;
+    it('should return init error if child process failed to spawn', async function () {
+      process.env.CHILD_PROCESS_PROXY_SRC_PATH_DO_NOT_USE_THIS_EXCEPT_FOR_TESTING =
+        brokenScript;
 
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
-
-      let err;
-
-      try {
-        await runtime.evaluate('1+1');
-      } catch (e: any) {
-        err = e;
-      }
-
-      expect(err).to.be.instanceof(Error);
-      expect(err).to.have.property('message').match(/Child process failed to start/);
-    });
-
-    it('should return init error if worker in child process failed to spawn', async() => {
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true }, {
-        env: {
-          WORKER_RUNTIME_SRC_PATH_DO_NOT_USE_THIS_EXCEPT_FOR_TESTING: brokenScript
-        }
+      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
       });
 
       let err;
@@ -78,21 +63,54 @@ describe('WorkerRuntime', () => {
       }
 
       expect(err).to.be.instanceof(Error);
-      expect(err).to.have.property('message').match(/Worker thread failed to start/);
+      expect(err)
+        .to.have.property('message')
+        .match(/Child process failed to start/);
+    });
+
+    it('should return init error if worker in child process failed to spawn', async function () {
+      runtime = new WorkerRuntime(
+        'mongodb://nodb/',
+        dummyOptions,
+        { nodb: true },
+        {
+          env: {
+            WORKER_RUNTIME_SRC_PATH_DO_NOT_USE_THIS_EXCEPT_FOR_TESTING:
+              brokenScript,
+          },
+        }
+      );
+
+      let err;
+
+      try {
+        await runtime.evaluate('1+1');
+      } catch (e: any) {
+        err = e;
+      }
+
+      expect(err).to.be.instanceof(Error);
+      expect(err)
+        .to.have.property('message')
+        .match(/Worker thread failed to start/);
     });
   });
 
-  describe('evaluate', () => {
-    it('should evaluate and return basic values', async() => {
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+  describe('evaluate', function () {
+    it('should evaluate and return basic values', async function () {
+      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
       const result = await runtime.evaluate('1+1');
 
       expect(result.printable).to.equal(2);
     });
 
-    describe('errors', () => {
-      it("should throw an error if it's thrown during evaluation", async() => {
-        runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+    describe('errors', function () {
+      it("should throw an error if it's thrown during evaluation", async function () {
+        runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+          nodb: true,
+        });
 
         let err: Error;
 
@@ -110,8 +128,10 @@ describe('WorkerRuntime', () => {
           .matches(/TypeError: Oh no, types!/);
       });
 
-      it("should return an error if it's returned from evaluation", async() => {
-        runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+      it("should return an error if it's returned from evaluation", async function () {
+        runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+          nodb: true,
+        });
 
         const { printable } = await runtime.evaluate(
           'new SyntaxError("Syntax!")'
@@ -127,35 +147,43 @@ describe('WorkerRuntime', () => {
     });
   });
 
-  describe('getCompletions', () => {
+  describe('getCompletions', function () {
     const testServer = startTestServer('shared');
 
-    it('should return completions', async() => {
-      runtime = new WorkerRuntime(await testServer.connectionString(), dummyOptions);
+    it('should return completions', async function () {
+      runtime = new WorkerRuntime(
+        await testServer.connectionString(),
+        dummyOptions
+      );
       const completions = await runtime.getCompletions('db.coll1.f');
 
       expect(completions).to.deep.contain({ completion: 'db.coll1.find' });
     });
   });
 
-  describe('getShellPrompt', () => {
+  describe('getShellPrompt', function () {
     const testServer = startTestServer('shared');
 
-    it('should return prompt when connected to the server', async() => {
-      runtime = new WorkerRuntime(await testServer.connectionString(), dummyOptions);
+    it('should return prompt when connected to the server', async function () {
+      runtime = new WorkerRuntime(
+        await testServer.connectionString(),
+        dummyOptions
+      );
       const result = await runtime.getShellPrompt();
 
       expect(result).to.match(/>/);
     });
   });
 
-  describe('setEvaluationListener', () => {
-    it('allows to set evaluation listener for runtime', async() => {
+  describe('setEvaluationListener', function () {
+    it('allows to set evaluation listener for runtime', async function () {
       const evalListener = {
-        onPrompt: sinon.spy(() => 'password123')
+        onPrompt: sinon.spy(() => 'password123'),
       };
 
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
 
       runtime.setEvaluationListener(evalListener);
 
@@ -166,10 +194,10 @@ describe('WorkerRuntime', () => {
     });
   });
 
-  describe('eventEmitter', () => {
+  describe('eventEmitter', function () {
     const testServer = startTestServer('shared');
 
-    it('should propagate emitted events from worker', async() => {
+    it('should propagate emitted events from worker', async function () {
       const eventEmitter = createMockEventEmitter();
 
       runtime = new WorkerRuntime(
@@ -182,16 +210,19 @@ describe('WorkerRuntime', () => {
 
       await runtime.evaluate('db.getCollectionNames()');
 
-      expect(eventEmitter.emit).to.have.been.calledWith('mongosh:api-call-with-arguments', {
-        arguments: {},
-        class: 'Database',
-        db: 'test',
-        method: 'getCollectionNames'
-      });
+      expect(eventEmitter.emit).to.have.been.calledWith(
+        'mongosh:api-call-with-arguments',
+        {
+          arguments: {},
+          class: 'Database',
+          db: 'test',
+          method: 'getCollectionNames',
+        }
+      );
     });
   });
 
-  describe('terminate', () => {
+  describe('terminate', function () {
     function isRunning(pid: number): boolean {
       try {
         process.kill(pid, 0);
@@ -203,32 +234,36 @@ describe('WorkerRuntime', () => {
 
     // We will be testing a bunch of private props that can be accessed only with
     // strings to make TS happy
-    /* eslint-disable dot-notation */
-    it('should terminate child process', async() => {
-      const runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+    it('should terminate child process', async function () {
+      const runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
       await runtime.terminate();
       expect(runtime['childProcess']).to.have.property('killed', true);
       expect(isRunning(runtime['childProcess'].pid)).to.equal(false);
     });
 
-    it('should remove all listeners from childProcess', async() => {
-      const runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+    it('should remove all listeners from childProcess', async function () {
+      const runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
       await runtime.terminate();
       expect(runtime['childProcess'].listenerCount('message')).to.equal(0);
     });
-    /* eslint-enable dot-notation */
 
-    it('should cancel any in-flight runtime calls', async() => {
-      const runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+    it('should cancel any in-flight runtime calls', async function () {
+      const runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
       let err: Error;
       try {
         await Promise.all([
           runtime.evaluate('while(true){}'),
-          (async() => {
+          (async () => {
             // smol sleep to make sure we actually issued a call
             await sleep(100);
             await runtime.terminate();
-          })()
+          })(),
         ]);
       } catch (e: any) {
         err = e;
@@ -238,9 +273,11 @@ describe('WorkerRuntime', () => {
     });
   });
 
-  describe('interrupt', () => {
-    it('should interrupt in-flight async tasks', async() => {
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+  describe('interrupt', function () {
+    it('should interrupt in-flight async tasks', async function () {
+      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
 
       await runtime.waitForRuntimeToBeReady();
 
@@ -249,13 +286,13 @@ describe('WorkerRuntime', () => {
       try {
         await Promise.all([
           runtime.evaluate('sleep(1000000)'),
-          (async() => {
+          (async () => {
             // This is flaky when not enought time given to the worker to
             // finish the sync part of the work. If it causes too much issues
             // it would be okay to disable this test completely
             await sleep(5000);
             await runtime.interrupt();
-          })()
+          })(),
         ]);
       } catch (e: any) {
         err = e;
@@ -267,8 +304,10 @@ describe('WorkerRuntime', () => {
         .match(/Async script execution was interrupted/);
     });
 
-    it('should interrupt in-flight synchronous tasks', async() => {
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+    it('should interrupt in-flight synchronous tasks', async function () {
+      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
 
       await runtime.waitForRuntimeToBeReady();
 
@@ -277,10 +316,10 @@ describe('WorkerRuntime', () => {
       try {
         await Promise.all([
           runtime.evaluate('while(true){}'),
-          (async() => {
+          (async () => {
             await sleep(200);
             await runtime.interrupt();
-          })()
+          })(),
         ]);
       } catch (e: any) {
         err = e;
@@ -292,18 +331,20 @@ describe('WorkerRuntime', () => {
         .match(/Script execution was interrupted/);
     });
 
-    it('should allow to evaluate again after interruption', async() => {
-      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, { nodb: true });
+    it('should allow to evaluate again after interruption', async function () {
+      runtime = new WorkerRuntime('mongodb://nodb/', dummyOptions, {
+        nodb: true,
+      });
 
       await runtime.waitForRuntimeToBeReady();
 
       try {
         await Promise.all([
           runtime.evaluate('while(true){}'),
-          (async() => {
+          (async () => {
             await sleep(200);
             await runtime.interrupt();
-          })()
+          })(),
         ]);
       } catch (e: any) {
         // ignore

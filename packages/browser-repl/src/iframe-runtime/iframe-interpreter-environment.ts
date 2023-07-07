@@ -1,6 +1,6 @@
-import {
+import type {
   ContextValue,
-  InterpreterEnvironment
+  InterpreterEnvironment,
 } from '@mongosh/browser-runtime-core';
 
 export class IframeInterpreterEnvironment implements InterpreterEnvironment {

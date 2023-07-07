@@ -1,13 +1,19 @@
-import { ChildProcess } from 'child_process';
-import { exposeAll, Exposed, close } from './rpc';
+import type { ChildProcess } from 'child_process';
+import type { Exposed } from './rpc';
+import { exposeAll, close } from './rpc';
 import type { WorkerRuntime } from './index';
 import { deserializeEvaluationResult } from './serializer';
-import { RuntimeEvaluationListener } from '@mongosh/browser-runtime-core';
+import type { RuntimeEvaluationListener } from '@mongosh/browser-runtime-core';
 
 export class ChildProcessEvaluationListener {
-  exposedListener: Exposed<Required<Omit<RuntimeEvaluationListener, 'onLoad' | 'getCryptLibraryOptions'>>>;
+  exposedListener: Exposed<
+    Required<
+      Omit<RuntimeEvaluationListener, 'onLoad' | 'getCryptLibraryOptions'>
+    >
+  >;
 
   constructor(workerRuntime: WorkerRuntime, childProcess: ChildProcess) {
+    // @ts-expect-error TODO(MONGOSH-1506) fix the typing
     this.exposedListener = exposeAll(
       {
         onPrompt(question, type) {
@@ -20,19 +26,28 @@ export class ChildProcessEvaluationListener {
           return workerRuntime.evaluationListener?.onPrint?.(values);
         },
         setConfig(key, value) {
-          return workerRuntime.evaluationListener?.setConfig?.(key, value) ?? Promise.resolve('ignored');
+          return (
+            workerRuntime.evaluationListener?.setConfig?.(key, value) ??
+            Promise.resolve('ignored')
+          );
         },
         resetConfig(key) {
-          return workerRuntime.evaluationListener?.resetConfig?.(key) ?? Promise.resolve('ignored');
+          return (
+            workerRuntime.evaluationListener?.resetConfig?.(key) ??
+            Promise.resolve('ignored')
+          );
         },
         validateConfig(key, value) {
-          return workerRuntime.evaluationListener?.validateConfig?.(key, value) ?? Promise.resolve(null);
+          return (
+            workerRuntime.evaluationListener?.validateConfig?.(key, value) ??
+            Promise.resolve(null)
+          );
         },
         getConfig(key) {
-          return workerRuntime.evaluationListener?.getConfig?.(key) as any;
+          return workerRuntime.evaluationListener?.getConfig?.(key);
         },
         listConfigOptions() {
-          return workerRuntime.evaluationListener?.listConfigOptions?.() as any;
+          return workerRuntime.evaluationListener?.listConfigOptions?.();
         },
         onClearCommand() {
           return workerRuntime.evaluationListener?.onClearCommand?.();
@@ -42,7 +57,7 @@ export class ChildProcessEvaluationListener {
             workerRuntime.evaluationListener?.onExit?.(exitCode) ??
             (Promise.resolve() as Promise<never>)
           );
-        }
+        },
       },
       childProcess
     );

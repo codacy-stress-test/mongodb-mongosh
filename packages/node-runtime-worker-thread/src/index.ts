@@ -1,24 +1,31 @@
 /* istanbul ignore file */
 /* ^^^ we test the dist directly, so isntanbul can't calculate the coverage correctly */
 
-import { ChildProcess, spawn, SpawnOptionsWithoutStdio } from 'child_process';
-import {
+import type { ChildProcess, SpawnOptionsWithoutStdio } from 'child_process';
+import { spawn } from 'child_process';
+import type {
   Runtime,
   RuntimeEvaluationListener,
-  RuntimeEvaluationResult
+  RuntimeEvaluationResult,
 } from '@mongosh/browser-runtime-core';
 import type { MongoshBus } from '@mongosh/types';
 import path from 'path';
 import { EventEmitter, once } from 'events';
 import { kill } from './spawn-child-from-source';
-import { Caller, createCaller, cancel } from './rpc';
+import type { Caller } from './rpc';
+import { createCaller, cancel } from './rpc';
 import { ChildProcessEvaluationListener } from './child-process-evaluation-listener';
 import type { WorkerRuntime as WorkerThreadWorkerRuntime } from './worker-runtime';
-import { deserializeEvaluationResult, serializeConnectOptions } from './serializer';
+import {
+  deserializeEvaluationResult,
+  serializeConnectOptions,
+} from './serializer';
 import { ChildProcessMongoshBus } from './child-process-mongosh-bus';
 import type { CompassServiceProvider } from '@mongosh/service-provider-server';
 
-type DevtoolsConnectOptions = Parameters<(typeof CompassServiceProvider)['connect']>[1];
+type DevtoolsConnectOptions = Parameters<
+  (typeof CompassServiceProvider)['connect']
+>[1];
 type ChildProcessRuntime = Caller<WorkerThreadWorkerRuntime>;
 
 function parseStderrToError(str: string): Error | null {
@@ -93,11 +100,11 @@ class WorkerRuntime implements Runtime {
       [this.childProcessProxySrcPath],
       {
         stdio: ['inherit', 'inherit', 'pipe', 'ipc'],
-        ...spawnOptions
+        ...spawnOptions,
       }
     );
 
-    const waitForReadyMessage = async() => {
+    const waitForReadyMessage = async () => {
       let msg: string;
       while (([msg] = await once(this.childProcess, 'message'))) {
         if (msg === 'ready') return;
@@ -106,12 +113,11 @@ class WorkerRuntime implements Runtime {
 
     let spawnError = '';
 
-    // eslint-disable-next-line chai-friendly/no-unused-expressions
     this.childProcess?.stderr?.setEncoding('utf8')?.on('data', (chunk) => {
       spawnError += chunk;
     });
 
-    const waitForError = async() => {
+    const waitForError = async () => {
       const [exitCode] = await once(this.childProcess, 'exit');
 
       if (exitCode) {
@@ -121,7 +127,9 @@ class WorkerRuntime implements Runtime {
           error.message = `Child process failed to start with the following error: ${error.message}`;
         } else {
           error = new Error(
-            `Worker runtime failed to start: child process exited with code ${exitCode}`
+            `Worker runtime failed to start: child process exited with code ${
+              exitCode as number | string
+            }`
           );
         }
 
@@ -144,7 +152,7 @@ class WorkerRuntime implements Runtime {
         'getCompletions',
         'setEvaluationListener',
         'getShellPrompt',
-        'interrupt'
+        'interrupt',
       ],
       this.childProcess
     );
@@ -159,7 +167,11 @@ class WorkerRuntime implements Runtime {
       this.childProcess
     );
 
-    await this.childProcessRuntime.init(uri, serializeConnectOptions(driverOptions), cliOptions);
+    await this.childProcessRuntime.init(
+      uri,
+      serializeConnectOptions(driverOptions),
+      cliOptions
+    );
   }
 
   async evaluate(code: string): Promise<RuntimeEvaluationResult> {

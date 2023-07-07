@@ -1,43 +1,52 @@
 import { expect, use } from 'chai';
-import sinon, { StubbedInstance, stubInterface } from 'ts-sinon';
-import { EventEmitter } from 'events';
+import type { StubbedInstance } from 'ts-sinon';
+import sinon, { stubInterface } from 'ts-sinon';
+import type { EventEmitter } from 'events';
 import { signatures, toShellResult } from './index';
-import { ALL_SERVER_VERSIONS, ALL_TOPOLOGIES, ALL_PLATFORMS, shellApiType, ADMIN_DB } from './enums';
+import {
+  ALL_SERVER_VERSIONS,
+  ALL_TOPOLOGIES,
+  ALL_PLATFORMS,
+  shellApiType,
+  ADMIN_DB,
+} from './enums';
 import Database from './database';
 import Mongo from './mongo';
 import Collection from './collection';
-import AggregationCursor from './aggregation-cursor';
 import ChangeStreamCursor from './change-stream-cursor';
 import Explainable from './explainable';
-import {
+import type {
   FindCursor as ServiceProviderCursor,
   AggregationCursor as ServiceProviderAggregationCursor,
   RunCommandCursor as ServiceProviderRunCommandCursor,
   ServiceProvider,
-  bson,
-  ClientSession as ServiceProviderSession
+  ClientSession as ServiceProviderSession,
 } from '@mongosh/service-provider-core';
-import { ObjectId } from 'mongodb';
+import { bson } from '@mongosh/service-provider-core';
 import ShellInstanceState from './shell-instance-state';
 import { ShellApiErrors } from './error-codes';
-import { CommonErrors, MongoshInvalidInputError, MongoshRuntimeError } from '@mongosh/errors';
+import {
+  CommonErrors,
+  MongoshInvalidInputError,
+  MongoshRuntimeError,
+} from '@mongosh/errors';
 
 const sinonChai = require('sinon-chai'); // weird with import
 
 use(sinonChai);
-describe('Collection', () => {
-  describe('help', () => {
+describe('Collection', function () {
+  describe('help', function () {
     const apiClass = new Collection({} as any, {} as any, 'name');
-    it('calls help function', async() => {
+    it('calls help function', async function () {
       expect((await toShellResult(apiClass.help())).type).to.equal('Help');
       expect((await toShellResult(apiClass.help)).type).to.equal('Help');
     });
   });
-  describe('signatures', () => {
-    it('type', () => {
+  describe('signatures', function () {
+    it('type', function () {
       expect(signatures.Collection.type).to.equal('Collection');
     });
-    it('attributes', () => {
+    it('attributes', function () {
       expect(signatures.Collection.attributes.aggregate).to.deep.equal({
         type: 'function',
         returnsPromise: true,
@@ -45,66 +54,76 @@ describe('Collection', () => {
         returnType: 'AggregationCursor',
         platforms: ALL_PLATFORMS,
         topologies: ALL_TOPOLOGIES,
-        apiVersions: [ 1, Infinity ],
+        apiVersions: [1, Infinity],
         serverVersions: ALL_SERVER_VERSIONS,
         isDirectShellCommand: false,
         acceptsRawInput: false,
-        shellCommandCompleter: undefined
+        shellCommandCompleter: undefined,
       });
     });
   });
-  describe('metadata', () => {
-    describe('toShellResult', () => {
+  describe('metadata', function () {
+    describe('toShellResult', function () {
       const mongo = sinon.spy();
       const db = new Database(mongo as any, 'myDB');
       const coll = new Collection(mongo as any, db, 'myCollection');
-      it('toShellResult', async() => {
+      it('toShellResult', async function () {
         expect((await toShellResult(coll)).type).to.equal('Collection');
-        expect((await toShellResult(coll)).printable).to.equal('myDB.myCollection');
+        expect((await toShellResult(coll)).printable).to.equal(
+          'myDB.myCollection'
+        );
       });
     });
   });
-  describe('.collections', () => {
-    it('allows to get a collection as property if is not one of the existing methods', () => {
-      const database = new Database({ _instanceState: { emitApiCallWithArgs: (): void => {} } } as any, 'db1');
+  describe('.collections', function () {
+    it('allows to get a collection as property if is not one of the existing methods', function () {
+      const database = new Database(
+        { _instanceState: { emitApiCallWithArgs: (): void => {} } } as any,
+        'db1'
+      );
       const coll: any = new Collection({} as any, database, 'coll');
       expect(coll.someCollection).to.have.instanceOf(Collection);
       expect(coll.someCollection._name).to.equal('coll.someCollection');
     });
 
-    it('reuses collections', () => {
-      const database: any = new Database({ _instanceState: { emitApiCallWithArgs: (): void => {} } } as any, 'db1');
+    it('reuses collections', function () {
+      const database: any = new Database(
+        { _instanceState: { emitApiCallWithArgs: (): void => {} } } as any,
+        'db1'
+      );
       const coll: any = new Collection({} as any, database, 'coll');
-      expect(coll.someCollection).to.equal(database.getCollection('coll.someCollection'));
+      expect(coll.someCollection).to.equal(
+        database.getCollection('coll.someCollection')
+      );
       expect(coll.someCollection).to.equal(database.coll.someCollection);
     });
 
-    it('does not return a collection starting with _', () => {
+    it('does not return a collection starting with _', function () {
       // this is the behaviour in the old shell
       const database: any = new Database({} as any, 'db1');
       const coll: any = new Collection({} as any, database, 'coll');
       expect(coll._someProperty).to.equal(undefined);
     });
 
-    it('does not return a collection for symbols', () => {
+    it('does not return a collection for symbols', function () {
       const database: any = new Database({} as any, 'db1');
       const coll: any = new Collection({} as any, database, 'coll');
       expect(coll[Symbol('someProperty')]).to.equal(undefined);
     });
 
-    it('does not return a collection with invalid name', () => {
+    it('does not return a collection with invalid name', function () {
       const database: any = new Database({} as any, 'db1');
       const coll: any = new Collection({} as any, database, 'coll');
       expect(coll.foo$bar).to.equal(undefined);
     });
 
-    it('allows to access _name', () => {
+    it('allows to access _name', function () {
       const database: any = new Database({} as any, 'db1');
       const coll: any = new Collection({} as any, database, 'coll');
       expect(coll._name).to.equal('coll');
     });
   });
-  describe('commands', () => {
+  describe('commands', function () {
     let mongo: Mongo;
     let serviceProvider: StubbedInstance<ServiceProvider>;
     let database: Database;
@@ -112,7 +131,7 @@ describe('Collection', () => {
     let instanceState: ShellInstanceState;
     let collection: Collection;
 
-    beforeEach(() => {
+    beforeEach(function () {
       bus = stubInterface<EventEmitter>();
       serviceProvider = stubInterface<ServiceProvider>();
       serviceProvider.runCommand.resolves({ ok: 1 });
@@ -120,30 +139,35 @@ describe('Collection', () => {
       serviceProvider.initialDb = 'test';
       serviceProvider.bsonLibrary = bson;
       instanceState = new ShellInstanceState(serviceProvider, bus);
-      mongo = new Mongo(instanceState, undefined, undefined, undefined, serviceProvider);
+      mongo = new Mongo(
+        instanceState,
+        undefined,
+        undefined,
+        undefined,
+        serviceProvider
+      );
       database = new Database(mongo, 'db1');
       collection = new Collection(mongo, database, 'coll1');
     });
-    describe('aggregate', () => {
+    describe('aggregate', function () {
       let serviceProviderCursor: StubbedInstance<ServiceProviderAggregationCursor>;
 
-      beforeEach(() => {
-        serviceProviderCursor = stubInterface<ServiceProviderAggregationCursor>();
+      beforeEach(function () {
+        serviceProviderCursor =
+          stubInterface<ServiceProviderAggregationCursor>();
       });
 
-      it('calls serviceProvider.aggregate with pipeline and no options', async() => {
-        await collection.aggregate(
-          [{ $piplelineStage: {} }]
-        );
+      it('calls serviceProvider.aggregate with pipeline and no options', async function () {
+        await collection.aggregate([{ $piplelineStage: {} }]);
 
         expect(serviceProvider.aggregate).to.have.been.calledWith(
           collection._database._name,
           collection._name,
-          [{ $piplelineStage: {} } ],
+          [{ $piplelineStage: {} }],
           {}
         );
       });
-      it('calls serviceProvider.aggregate with no pipeline and no options', async() => {
+      it('calls serviceProvider.aggregate with no pipeline and no options', async function () {
         await collection.aggregate();
 
         expect(serviceProvider.aggregate).to.have.been.calledWith(
@@ -153,7 +177,7 @@ describe('Collection', () => {
           {}
         );
       });
-      it('calls serviceProvider.aggregate with stages as arguments', async() => {
+      it('calls serviceProvider.aggregate with stages as arguments', async function () {
         await collection.aggregate(
           { $option1: 1 },
           { $option2: 2 },
@@ -168,10 +192,11 @@ describe('Collection', () => {
         );
       });
 
-      it('calls serviceProvider.aggregate with pipleline and options', async() => {
-        await collection.aggregate(
-          [{ $piplelineStage: {} }],
-          { options: true, batchSize: 10 });
+      it('calls serviceProvider.aggregate with pipleline and options', async function () {
+        await collection.aggregate([{ $piplelineStage: {} }], {
+          options: true,
+          batchSize: 10,
+        });
 
         expect(serviceProvider.aggregate).to.have.been.calledWith(
           collection._database._name,
@@ -181,35 +206,36 @@ describe('Collection', () => {
         );
       });
 
-      it('returns an AggregationCursor that wraps the service provider one', async() => {
+      it('returns an AggregationCursor that wraps the service provider one', async function () {
         const toArrayResult = [{ foo: 'bar' }];
         serviceProviderCursor.tryNext.onFirstCall().resolves({ foo: 'bar' });
         serviceProviderCursor.tryNext.onSecondCall().resolves(null);
         serviceProvider.aggregate.returns(serviceProviderCursor);
 
-        const cursor = await collection.aggregate([{
-          $piplelineStage: {}
-        }]);
+        const cursor = await collection.aggregate([
+          {
+            $piplelineStage: {},
+          },
+        ]);
 
-        expect(await (cursor as AggregationCursor).toArray()).to.deep.equal(toArrayResult);
+        expect(await (cursor as any).toArray()).to.deep.equal(toArrayResult);
       });
 
-      it('throws if serviceProvider.aggregate rejects', async() => {
+      it('throws if serviceProvider.aggregate rejects', async function () {
         const expectedError = new Error();
         serviceProvider.aggregate.throws(expectedError);
 
         expect(
-          await collection.aggregate(
-            [{ $piplelineStage: {} }]
-          ).catch(e => e)
+          await collection.aggregate([{ $piplelineStage: {} }]).catch((e) => e)
         ).to.equal(expectedError);
       });
 
-      it('pass readConcern and writeConcern as dbOption', async() => {
-        await collection.aggregate(
-          [],
-          { otherOption: true, readConcern: { level: 'majority' }, writeConcern: { w: 1 } }
-        );
+      it('pass readConcern and writeConcern as dbOption', async function () {
+        await collection.aggregate([], {
+          otherOption: true,
+          readConcern: { level: 'majority' },
+          writeConcern: { w: 1 },
+        });
 
         expect(serviceProvider.aggregate).to.have.been.calledWith(
           collection._database._name,
@@ -220,46 +246,44 @@ describe('Collection', () => {
         );
       });
 
-      it('runs explain if explain true is passed', async() => {
+      it('runs explain if explain true is passed', async function () {
         const expectedExplainResult = {};
         serviceProviderCursor.explain.resolves(expectedExplainResult);
         serviceProvider.aggregate.returns(serviceProviderCursor as any);
 
-        const explainResult = await collection.aggregate(
-          [],
-          { explain: true }
-        );
+        const explainResult = await collection.aggregate([], { explain: true });
 
         expect(explainResult).to.deep.equal(expectedExplainResult);
-        expect((await toShellResult(explainResult)).type).to.equal('ExplainOutput');
+        expect((await toShellResult(explainResult)).type).to.equal(
+          'ExplainOutput'
+        );
         expect(serviceProviderCursor.explain).to.have.been.calledOnce;
       });
 
-      it('wont run explain if explain is not passed', async() => {
+      it('wont run explain if explain is not passed', async function () {
         serviceProvider.aggregate.returns(serviceProviderCursor as any);
 
-        const cursor = await collection.aggregate(
-          [],
-          {}
-        );
+        const cursor = await collection.aggregate([], {});
 
-        expect((await toShellResult(cursor)).type).to.equal('AggregationCursor');
+        expect((await toShellResult(cursor)).type).to.equal(
+          'AggregationCursor'
+        );
         expect(serviceProviderCursor.explain).not.to.have.been.called;
       });
     });
 
-    describe('bulkWrite', () => {
+    describe('bulkWrite', function () {
       let requests;
-      beforeEach(() => {
-        requests = [
-          { insertOne: { 'document': { doc: 1 } } }
-        ];
+      beforeEach(function () {
+        requests = [{ insertOne: { document: { doc: 1 } } }];
       });
 
-      it('calls service provider bulkWrite', async() => {
-        serviceProvider.bulkWrite = sinon.spy(() => Promise.resolve({
-          result: { ok: 1 }
-        })) as any;
+      it('calls service provider bulkWrite', async function () {
+        serviceProvider.bulkWrite = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1 },
+          })
+        ) as any;
 
         await collection.bulkWrite(requests);
 
@@ -270,13 +294,15 @@ describe('Collection', () => {
         );
       });
 
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.bulkWrite = sinon.spy(() => Promise.resolve({
-          result: { ok: 1 }
-        })) as any;
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.bulkWrite = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1 },
+          })
+        ) as any;
 
         await collection.bulkWrite(requests, {
-          writeConcern: { w: 'majority' }
+          writeConcern: { w: 'majority' },
         });
 
         expect(serviceProvider.bulkWrite).to.have.been.calledWith(
@@ -287,9 +313,9 @@ describe('Collection', () => {
         );
       });
 
-      it('adapts the result', async() => {
-        const id1 = new ObjectId();
-        const id2 = new ObjectId();
+      it('adapts the result', async function () {
+        const id1 = new bson.ObjectId();
+        const id2 = new bson.ObjectId();
         serviceProvider.bulkWrite.resolves({
           result: { ok: 1 },
           insertedCount: 1,
@@ -299,7 +325,7 @@ describe('Collection', () => {
           upsertedCount: 5,
           insertedIds: { 0: id1 },
           upsertedIds: { 0: id2 },
-          ok: true
+          ok: true,
         } as any);
 
         const result = await collection.bulkWrite(requests);
@@ -312,20 +338,20 @@ describe('Collection', () => {
           deletedCount: 4,
           upsertedCount: 5,
           insertedIds: { 0: id1 },
-          upsertedIds: { 0: id2 }
+          upsertedIds: { 0: id2 },
         });
       });
     });
 
-    describe('convertToCapped', () => {
-      it('calls service provider runCommandWithCheck', async() => {
+    describe('convertToCapped', function () {
+      it('calls service provider runCommandWithCheck', async function () {
         const result = await collection.convertToCapped(1000);
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           'db1',
           {
             convertToCapped: 'coll1',
-            size: 1000
+            size: 1000,
           }
         );
 
@@ -333,13 +359,16 @@ describe('Collection', () => {
       });
     });
 
-    describe('count', () => {
-      it('passes readConcern through if specified', async() => {
-        serviceProvider.count = (sinon.spy(() => Promise.resolve(10))) as any;
+    describe('count', function () {
+      it('passes readConcern through if specified', async function () {
+        serviceProvider.count = sinon.spy(() => Promise.resolve(10)) as any;
 
-        await collection.count({}, {
-          readConcern: { level: 'majority' }
-        });
+        await collection.count(
+          {},
+          {
+            readConcern: { level: 'majority' },
+          }
+        );
 
         expect(serviceProvider.count).to.have.been.calledWith(
           'db1',
@@ -350,15 +379,20 @@ describe('Collection', () => {
       });
     });
 
-    describe('deleteMany', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.deleteMany = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, deletedCount: 10 }
-        })) as any;
+    describe('deleteMany', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.deleteMany = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, deletedCount: 10 },
+          })
+        ) as any;
 
-        await collection.deleteMany({}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.deleteMany(
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.deleteMany).to.have.been.calledWith(
           'db1',
@@ -368,24 +402,34 @@ describe('Collection', () => {
         );
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.deleteMany.resolves({ ok: 1 } as any);
 
-        const explained = await collection.deleteMany({}, { explain: 'queryPlanner' });
+        const explained = await collection.deleteMany(
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('deleteOne', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.deleteOne = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, deletedCount: 1 }
-        })) as any;
+    describe('deleteOne', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.deleteOne = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, deletedCount: 1 },
+          })
+        ) as any;
 
-        await collection.deleteOne({}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.deleteOne(
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.deleteOne).to.have.been.calledWith(
           'db1',
@@ -395,79 +439,134 @@ describe('Collection', () => {
         );
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.deleteOne.resolves({ ok: 1 } as any);
 
-        const explained = await collection.deleteOne({}, { explain: 'queryPlanner' });
+        const explained = await collection.deleteOne(
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('distinct', () => {
-      it('returns an ExplainOutput object when explained', async() => {
+    describe('distinct', function () {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.distinct.resolves({ ok: 1 } as any);
 
-        const explained = await collection.distinct('_id', {}, { explain: 'queryPlanner' });
+        const explained = await collection.distinct(
+          '_id',
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('remove', () => {
-      beforeEach(() => {
-        serviceProvider.deleteOne = sinon.spy(() => Promise.resolve({
-          acknowledged: true, deletedCount: 1
-        })) as any;
-        serviceProvider.deleteMany = sinon.spy(() => Promise.resolve({
-          acknowledged: true, deletedCount: 2
-        })) as any;
+    describe('remove', function () {
+      beforeEach(function () {
+        serviceProvider.deleteOne = sinon.spy(() =>
+          Promise.resolve({
+            acknowledged: true,
+            deletedCount: 1,
+          })
+        ) as any;
+        serviceProvider.deleteMany = sinon.spy(() =>
+          Promise.resolve({
+            acknowledged: true,
+            deletedCount: 2,
+          })
+        ) as any;
       });
 
-      it('calls deleteOne if justOne is passed as an argument', async() => {
+      it('calls deleteOne if justOne is passed as an argument', async function () {
         expect((await collection.remove({}, true)).deletedCount).to.equal(1);
-        expect(serviceProvider.deleteOne).to.have.been.calledWith('db1', 'coll1', {}, {});
+        expect(serviceProvider.deleteOne).to.have.been.calledWith(
+          'db1',
+          'coll1',
+          {},
+          {}
+        );
         expect(serviceProvider.deleteMany).to.not.have.been.called;
       });
 
-      it('calls deleteOne if justOne is passed as an option', async() => {
-        expect((await collection.remove({}, { justOne: true })).deletedCount).to.equal(1);
-        expect(serviceProvider.deleteOne).to.have.been.calledWith('db1', 'coll1', {}, {});
+      it('calls deleteOne if justOne is passed as an option', async function () {
+        expect(
+          (await collection.remove({}, { justOne: true })).deletedCount
+        ).to.equal(1);
+        expect(serviceProvider.deleteOne).to.have.been.calledWith(
+          'db1',
+          'coll1',
+          {},
+          {}
+        );
         expect(serviceProvider.deleteMany).to.not.have.been.called;
       });
 
-      it('calls deleteMany if !justOne is passed as an argument', async() => {
+      it('calls deleteMany if !justOne is passed as an argument', async function () {
         expect((await collection.remove({}, false)).deletedCount).to.equal(2);
         expect(serviceProvider.deleteOne).to.not.have.been.called;
-        expect(serviceProvider.deleteMany).to.have.been.calledWith('db1', 'coll1', {}, {});
+        expect(serviceProvider.deleteMany).to.have.been.calledWith(
+          'db1',
+          'coll1',
+          {},
+          {}
+        );
       });
 
-      it('calls deleteMany if !justOne is passed as an option', async() => {
-        expect((await collection.remove({}, { justOne: false })).deletedCount).to.equal(2);
+      it('calls deleteMany if !justOne is passed as an option', async function () {
+        expect(
+          (await collection.remove({}, { justOne: false })).deletedCount
+        ).to.equal(2);
         expect(serviceProvider.deleteOne).to.not.have.been.called;
-        expect(serviceProvider.deleteMany).to.have.been.calledWith('db1', 'coll1', {}, {});
+        expect(serviceProvider.deleteMany).to.have.been.calledWith(
+          'db1',
+          'coll1',
+          {},
+          {}
+        );
       });
 
-      it('calls deleteMany by default', async() => {
+      it('calls deleteMany by default', async function () {
         expect((await collection.remove({})).deletedCount).to.equal(2);
         expect(serviceProvider.deleteOne).to.not.have.been.called;
-        expect(serviceProvider.deleteMany).to.have.been.calledWith('db1', 'coll1', {}, {});
+        expect(serviceProvider.deleteMany).to.have.been.calledWith(
+          'db1',
+          'coll1',
+          {},
+          {}
+        );
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
-        serviceProvider.deleteMany = sinon.spy(() => Promise.resolve({ ok: 1 })) as any;
+      it('returns an ExplainOutput object when explained', async function () {
+        serviceProvider.deleteMany = sinon.spy(() =>
+          Promise.resolve({ ok: 1 })
+        ) as any;
 
-        const explained = await collection.remove({}, { explain: 'queryPlanner' });
+        const explained = await collection.remove(
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('findOneAndReplace', () => {
-      it('sets returnDocument to before by default', async() => {
-        serviceProvider.findOneAndReplace = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, value: {} }
-        })) as any;
+    describe('findOneAndReplace', function () {
+      it('sets returnDocument to before by default', async function () {
+        serviceProvider.findOneAndReplace = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, value: {} },
+          })
+        ) as any;
 
         await collection.findOneAndReplace({}, {});
 
@@ -480,14 +579,20 @@ describe('Collection', () => {
         );
       });
 
-      it('lets returnNewDocument determine returnDocument', async() => {
-        serviceProvider.findOneAndReplace = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, value: {} }
-        })) as any;
+      it('lets returnNewDocument determine returnDocument', async function () {
+        serviceProvider.findOneAndReplace = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, value: {} },
+          })
+        ) as any;
 
-        await collection.findOneAndReplace({}, {}, {
-          returnNewDocument: true
-        });
+        await collection.findOneAndReplace(
+          {},
+          {},
+          {
+            returnNewDocument: true,
+          }
+        );
 
         expect(serviceProvider.findOneAndReplace).to.have.been.calledWith(
           'db1',
@@ -498,14 +603,20 @@ describe('Collection', () => {
         );
       });
 
-      it('lets returnOriginal determine returnDocument', async() => {
-        serviceProvider.findOneAndReplace = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, value: {} }
-        })) as any;
+      it('lets returnOriginal determine returnDocument', async function () {
+        serviceProvider.findOneAndReplace = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, value: {} },
+          })
+        ) as any;
 
-        await collection.findOneAndReplace({}, {}, {
-          returnOriginal: false
-        });
+        await collection.findOneAndReplace(
+          {},
+          {},
+          {
+            returnOriginal: false,
+          }
+        );
 
         expect(serviceProvider.findOneAndReplace).to.have.been.calledWith(
           'db1',
@@ -516,33 +627,47 @@ describe('Collection', () => {
         );
       });
 
-      it('throws when returnDocument is an invalid value', async() => {
+      it('throws when returnDocument is an invalid value', async function () {
         try {
-          await collection.findOneAndReplace({}, {}, {
-            returnDocument: 'somethingelse' as any
-          });
+          await collection.findOneAndReplace(
+            {},
+            {},
+            {
+              returnDocument: 'somethingelse' as any,
+            }
+          );
           expect.fail('missed exception');
         } catch (error: any) {
           expect(error).to.be.instanceOf(MongoshInvalidInputError);
-          expect(error.message).to.contain("returnDocument needs to be either 'before' or 'after'");
+          expect(error.message).to.contain(
+            "returnDocument needs to be either 'before' or 'after'"
+          );
           expect(error.code).to.equal(CommonErrors.InvalidArgument);
         }
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.findOneAndReplace.resolves({ ok: 1 });
 
-        const explained = await collection.findOneAndReplace({}, {}, { explain: 'queryPlanner' });
+        const explained = await collection.findOneAndReplace(
+          {},
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('findOneAndUpdate', () => {
-      it('sets returnDocument to before by default', async() => {
-        serviceProvider.findOneAndUpdate = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, value: {} }
-        })) as any;
+    describe('findOneAndUpdate', function () {
+      it('sets returnDocument to before by default', async function () {
+        serviceProvider.findOneAndUpdate = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, value: {} },
+          })
+        ) as any;
 
         await collection.findOneAndUpdate({}, {});
 
@@ -555,14 +680,20 @@ describe('Collection', () => {
         );
       });
 
-      it('lets returnNewDocument determine returnDocument', async() => {
-        serviceProvider.findOneAndUpdate = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, value: {} }
-        })) as any;
+      it('lets returnNewDocument determine returnDocument', async function () {
+        serviceProvider.findOneAndUpdate = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, value: {} },
+          })
+        ) as any;
 
-        await collection.findOneAndUpdate({}, {}, {
-          returnNewDocument: true
-        });
+        await collection.findOneAndUpdate(
+          {},
+          {},
+          {
+            returnNewDocument: true,
+          }
+        );
 
         expect(serviceProvider.findOneAndUpdate).to.have.been.calledWith(
           'db1',
@@ -573,14 +704,20 @@ describe('Collection', () => {
         );
       });
 
-      it('lets returnOriginal determine returnDocument', async() => {
-        serviceProvider.findOneAndUpdate = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, value: {} }
-        })) as any;
+      it('lets returnOriginal determine returnDocument', async function () {
+        serviceProvider.findOneAndUpdate = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, value: {} },
+          })
+        ) as any;
 
-        await collection.findOneAndUpdate({}, {}, {
-          returnOriginal: false
-        });
+        await collection.findOneAndUpdate(
+          {},
+          {},
+          {
+            returnOriginal: false,
+          }
+        );
 
         expect(serviceProvider.findOneAndUpdate).to.have.been.calledWith(
           'db1',
@@ -591,49 +728,66 @@ describe('Collection', () => {
         );
       });
 
-      it('throws when returnDocument is an invalid value', async() => {
+      it('throws when returnDocument is an invalid value', async function () {
         try {
-          await collection.findOneAndUpdate({}, {}, {
-            returnDocument: 'somethingelse' as any
-          });
+          await collection.findOneAndUpdate(
+            {},
+            {},
+            {
+              returnDocument: 'somethingelse' as any,
+            }
+          );
           expect.fail('missed exception');
         } catch (error: any) {
           expect(error).to.be.instanceOf(MongoshInvalidInputError);
-          expect(error.message).to.contain("returnDocument needs to be either 'before' or 'after'");
+          expect(error.message).to.contain(
+            "returnDocument needs to be either 'before' or 'after'"
+          );
           expect(error.code).to.equal(CommonErrors.InvalidArgument);
         }
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.findOneAndUpdate.resolves({ ok: 1 });
 
-        const explained = await collection.findOneAndUpdate({}, {}, { explain: 'queryPlanner' });
+        const explained = await collection.findOneAndUpdate(
+          {},
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('getDb', () => {
-      it('returns the db instance', () => {
+    describe('getDb', function () {
+      it('returns the db instance', function () {
         expect(collection.getDB()).to.equal(database);
       });
     });
 
-    describe('getMongo', () => {
-      it('returns the Mongo instance', () => {
+    describe('getMongo', function () {
+      it('returns the Mongo instance', function () {
         expect(collection.getMongo()).to.equal(mongo);
       });
     });
 
-    describe('insert', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.insertMany = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, insertedIds: {} }
-        })) as any;
+    describe('insert', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.insertMany = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, insertedIds: {} },
+          })
+        ) as any;
 
-        await collection.insert({}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.insert(
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.insertMany).to.have.been.calledWith(
           'db1',
@@ -644,14 +798,16 @@ describe('Collection', () => {
       });
     });
 
-    describe('insertMany', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.insertMany = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, insertedIds: {} }
-        })) as any;
+    describe('insertMany', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.insertMany = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, insertedIds: {} },
+          })
+        ) as any;
 
         await collection.insertMany([{}], {
-          writeConcern: { w: 'majority' }
+          writeConcern: { w: 'majority' },
         });
 
         expect(serviceProvider.insertMany).to.have.been.calledWith(
@@ -663,15 +819,20 @@ describe('Collection', () => {
       });
     });
 
-    describe('insertOne', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.insertOne = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, insertedId: null }
-        })) as any;
+    describe('insertOne', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.insertOne = sinon.spy(() =>
+          Promise.resolve({
+            result: { ok: 1, insertedId: null },
+          })
+        ) as any;
 
-        await collection.insertOne({}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.insertOne(
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.insertOne).to.have.been.calledWith(
           'db1',
@@ -682,15 +843,27 @@ describe('Collection', () => {
       });
     });
 
-    describe('replaceOne', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.replaceOne = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, matchedCount: 0, modifiedCount: 0, upsertedCount: 0, upsertedId: null }
-        })) as any;
+    describe('replaceOne', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.replaceOne = sinon.spy(() =>
+          Promise.resolve({
+            result: {
+              ok: 1,
+              matchedCount: 0,
+              modifiedCount: 0,
+              upsertedCount: 0,
+              upsertedId: null,
+            },
+          })
+        ) as any;
 
-        await collection.replaceOne({}, {}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.replaceOne(
+          {},
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.replaceOne).to.have.been.calledWith(
           'db1',
@@ -702,15 +875,27 @@ describe('Collection', () => {
       });
     });
 
-    describe('updateOne', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.updateOne = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, matchedCount: 0, modifiedCount: 0, upsertedCount: 0, upsertedId: null }
-        })) as any;
+    describe('updateOne', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.updateOne = sinon.spy(() =>
+          Promise.resolve({
+            result: {
+              ok: 1,
+              matchedCount: 0,
+              modifiedCount: 0,
+              upsertedCount: 0,
+              upsertedId: null,
+            },
+          })
+        ) as any;
 
-        await collection.updateOne({}, {}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.updateOne(
+          {},
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.updateOne).to.have.been.calledWith(
           'db1',
@@ -721,24 +906,42 @@ describe('Collection', () => {
         );
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.updateOne.resolves({ ok: 1 } as any);
 
-        const explained = await collection.updateOne({}, {}, { explain: 'queryPlanner' });
+        const explained = await collection.updateOne(
+          {},
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('updateMany', () => {
-      it('passes writeConcern through if specified', async() => {
-        serviceProvider.updateMany = sinon.spy(() => Promise.resolve({
-          result: { ok: 1, matchedCount: 0, modifiedCount: 0, upsertedCount: 0, upsertedId: null }
-        })) as any;
+    describe('updateMany', function () {
+      it('passes writeConcern through if specified', async function () {
+        serviceProvider.updateMany = sinon.spy(() =>
+          Promise.resolve({
+            result: {
+              ok: 1,
+              matchedCount: 0,
+              modifiedCount: 0,
+              upsertedCount: 0,
+              upsertedId: null,
+            },
+          })
+        ) as any;
 
-        await collection.updateMany({}, {}, {
-          writeConcern: { w: 'majority' }
-        });
+        await collection.updateMany(
+          {},
+          {},
+          {
+            writeConcern: { w: 'majority' },
+          }
+        );
 
         expect(serviceProvider.updateMany).to.have.been.calledWith(
           'db1',
@@ -749,22 +952,28 @@ describe('Collection', () => {
         );
       });
 
-      it('returns an ExplainOutput object when explained', async() => {
+      it('returns an ExplainOutput object when explained', async function () {
         serviceProvider.updateMany.resolves({ ok: 1 } as any);
 
-        const explained = await collection.updateMany({}, {}, { explain: 'queryPlanner' });
+        const explained = await collection.updateMany(
+          {},
+          {},
+          { explain: 'queryPlanner' }
+        );
         expect((await toShellResult(explained)).type).to.equal('ExplainOutput');
-        expect((await toShellResult(explained)).printable).to.deep.equal({ ok: 1 });
+        expect((await toShellResult(explained)).printable).to.deep.equal({
+          ok: 1,
+        });
       });
     });
 
-    describe('createIndexes', () => {
-      beforeEach(() => {
+    describe('createIndexes', function () {
+      beforeEach(function () {
         serviceProvider.createIndexes.resolves(['index_1']);
       });
 
-      context('when options is not passed', () => {
-        it('calls serviceProvider.createIndexes using keyPatterns as keys', async() => {
+      context('when options is not passed', function () {
+        it('calls serviceProvider.createIndexes using keyPatterns as keys', async function () {
           await collection.createIndexes([{ x: 1 }]);
 
           expect(serviceProvider.createIndexes).to.have.been.calledWith(
@@ -775,8 +984,8 @@ describe('Collection', () => {
         });
       });
 
-      context('when options is an object', () => {
-        it('calls serviceProvider.createIndexes merging options', async() => {
+      context('when options is an object', function () {
+        it('calls serviceProvider.createIndexes merging options', async function () {
           await collection.createIndexes([{ x: 1 }], { name: 'index-1' });
 
           expect(serviceProvider.createIndexes).to.have.been.calledWith(
@@ -786,7 +995,7 @@ describe('Collection', () => {
             { name: 'index-1' }
           );
         });
-        it('should allow commitQuorum parameter', async() => {
+        it('should allow commitQuorum parameter', async function () {
           await collection.createIndexes([{ x: 1 }], { name: 'index-1' }, 3);
 
           expect(serviceProvider.createIndexes).to.have.been.calledWith(
@@ -797,27 +1006,29 @@ describe('Collection', () => {
           );
         });
       });
-      context('when options is not an object', () => {
-        it('throws an error', async() => {
-          const error = await collection.createIndexes(
-            [{ x: 1 }], 'unsupported' as any
-          ).catch(e => e);
+      context('when options is not an object', function () {
+        it('throws an error', async function () {
+          const error = await collection
+            .createIndexes([{ x: 1 }], 'unsupported' as any)
+            .catch((e) => e);
 
           expect(error).to.be.instanceOf(MongoshInvalidInputError);
-          expect(error.message).to.contain('The "options" argument must be an object.');
+          expect(error.message).to.contain(
+            'The "options" argument must be an object.'
+          );
           expect(error.code).to.equal(CommonErrors.InvalidArgument);
         });
       });
     });
 
     ['ensureIndex', 'createIndex'].forEach((method) => {
-      describe(method, () => {
-        beforeEach(() => {
+      describe(method, function () {
+        beforeEach(function () {
           serviceProvider.createIndexes.resolves(['index_1']);
         });
 
-        context('when options is not passed', () => {
-          it('calls serviceProvider.createIndexes using keys', async() => {
+        context('when options is not passed', function () {
+          it('calls serviceProvider.createIndexes using keys', async function () {
             await collection[method]({ x: 1 });
 
             expect(serviceProvider.createIndexes).to.have.been.calledWith(
@@ -828,8 +1039,8 @@ describe('Collection', () => {
           });
         });
 
-        context('when options is an object', () => {
-          it('calls serviceProvider.createIndexes merging options', async() => {
+        context('when options is an object', function () {
+          it('calls serviceProvider.createIndexes merging options', async function () {
             await collection[method]({ x: 1 }, { name: 'index-1' });
 
             expect(serviceProvider.createIndexes).to.have.been.calledWith(
@@ -839,7 +1050,7 @@ describe('Collection', () => {
               { name: 'index-1' }
             );
           });
-          it('should allow commitQuorum parameter', async() => {
+          it('should allow commitQuorum parameter', async function () {
             await collection[method]({ x: 1 }, { name: 'index-1' }, 3);
 
             expect(serviceProvider.createIndexes).to.have.been.calledWith(
@@ -851,14 +1062,17 @@ describe('Collection', () => {
           });
         });
 
-        context('when options is not an object', () => {
-          it('throws an error', async() => {
+        context('when options is not an object', function () {
+          it('throws an error', async function () {
             const error = await collection[method](
-              { x: 1 }, 'unsupported' as any
-            ).catch(e => e);
+              { x: 1 },
+              'unsupported' as any
+            ).catch((e) => e);
 
             expect(error).to.be.instanceOf(MongoshInvalidInputError);
-            expect(error.message).to.contain('The "options" argument must be an object.');
+            expect(error.message).to.contain(
+              'The "options" argument must be an object.'
+            );
             expect(error.code).to.equal(CommonErrors.InvalidArgument);
           });
         });
@@ -866,176 +1080,200 @@ describe('Collection', () => {
     });
 
     ['getIndexes', 'getIndexSpecs', 'getIndices'].forEach((method) => {
-      describe(method, () => {
+      describe(method, function () {
         let result;
-        beforeEach(() => {
-          result = [{
-            v: 2,
-            key: {
-              _id: 1
+        beforeEach(function () {
+          result = [
+            {
+              v: 2,
+              key: {
+                _id: 1,
+              },
+              name: '_id_',
+              ns: 'test.coll1',
             },
-            name: '_id_',
-            ns: 'test.coll1'
-          }];
+          ];
           serviceProvider.getIndexes.resolves(result);
         });
 
-        it('returns serviceProvider.getIndexes using keys', async() => {
+        it('returns serviceProvider.getIndexes using keys', async function () {
           expect(await collection[method]()).to.deep.equal(result);
         });
       });
     });
 
-    describe('getIndexKeys', () => {
+    describe('getIndexKeys', function () {
       let result;
-      beforeEach(() => {
-        result = [{
-          v: 2,
-          key: {
-            _id: 1
+      beforeEach(function () {
+        result = [
+          {
+            v: 2,
+            key: {
+              _id: 1,
+            },
+            name: '_id_',
+            ns: 'test.coll1',
           },
-          name: '_id_',
-          ns: 'test.coll1'
-        },
-        {
-          v: 2,
-          key: {
-            name: 1
+          {
+            v: 2,
+            key: {
+              name: 1,
+            },
+            name: 'name_',
+            ns: 'test.coll1',
           },
-          name: 'name_',
-          ns: 'test.coll1'
-        }];
+        ];
         serviceProvider.getIndexes.resolves(result);
       });
 
-      it('returns only indexes keys', async() => {
+      it('returns only indexes keys', async function () {
         expect(await collection.getIndexKeys()).to.deep.equal([
           { _id: 1 },
-          { name: 1 }
+          { name: 1 },
         ]);
       });
     });
 
-    describe('dropIndexes', () => {
-      context('when serviceProvider.dropIndexes resolves', () => {
+    describe('dropIndexes', function () {
+      context('when serviceProvider.dropIndexes resolves', function () {
         let result;
-        beforeEach(() => {
+        beforeEach(function () {
           result = { nIndexesWas: 3, ok: 1 };
           serviceProvider.runCommandWithCheck.resolves(result);
         });
 
-        it('returns the result of serviceProvider.dropIndexes', async() => {
+        it('returns the result of serviceProvider.dropIndexes', async function () {
           expect(await collection.dropIndexes('index_1')).to.deep.equal(result);
         });
 
-        it('defaults to removing all indexes', async() => {
+        it('defaults to removing all indexes', async function () {
           expect(await collection.dropIndexes()).to.deep.equal(result);
           expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
             database.getName(),
             { dropIndexes: collection.getName(), index: '*' },
-            {});
+            {}
+          );
         });
       });
 
-      context('when serviceProvider.dropIndexes rejects IndexNotFound', () => {
-        beforeEach(() => {
-          const error = new Error('index not found with name [index_1]');
-          Object.assign(error, {
-            ok: 0,
-            errmsg: 'index not found with name [index_1]',
-            code: 27,
-            codeName: 'IndexNotFound',
-            name: 'MongoError'
+      context(
+        'when serviceProvider.dropIndexes rejects IndexNotFound',
+        function () {
+          beforeEach(function () {
+            const error = new Error('index not found with name [index_1]');
+            Object.assign(error, {
+              ok: 0,
+              errmsg: 'index not found with name [index_1]',
+              code: 27,
+              codeName: 'IndexNotFound',
+              name: 'MongoError',
+            });
+
+            serviceProvider.runCommandWithCheck.rejects(error);
           });
 
-          serviceProvider.runCommandWithCheck.rejects(error);
-        });
-
-        it('returns the error as object', async() => {
-          expect(await collection.dropIndexes('index_1')).to.deep.equal({
-            ok: 0,
-            errmsg: 'index not found with name [index_1]',
-            code: 27,
-            codeName: 'IndexNotFound'
+          it('returns the error as object', async function () {
+            expect(await collection.dropIndexes('index_1')).to.deep.equal({
+              ok: 0,
+              errmsg: 'index not found with name [index_1]',
+              code: 27,
+              codeName: 'IndexNotFound',
+            });
           });
-        });
-      });
+        }
+      );
 
-      context('when serviceProvider.dropIndexes rejects IndexNotFound because mongod 4.0 does not support arrays', () => {
-        beforeEach(() => {
-          const error = new Error('invalid index name spec');
-          Object.assign(error, {
-            ok: 0,
-            errmsg: 'invalid index name spec',
-            code: 27,
-            codeName: 'IndexNotFound',
-            name: 'MongoError'
-          });
+      context(
+        'when serviceProvider.dropIndexes rejects IndexNotFound because mongod 4.0 does not support arrays',
+        function () {
+          beforeEach(function () {
+            const error = new Error('invalid index name spec');
+            Object.assign(error, {
+              ok: 0,
+              errmsg: 'invalid index name spec',
+              code: 27,
+              codeName: 'IndexNotFound',
+              name: 'MongoError',
+            });
 
-          // eslint-disable-next-line @typescript-eslint/require-await
-          serviceProvider.runCommandWithCheck.callsFake(async(db, cmd) => {
-            if (cmd.dropIndexes) {
-              if (Array.isArray(cmd.index)) {
-                throw error;
-              } else if (cmd.index === 'index_1') {
-                return { nIndexesWas: 2, ok: 1 };
+            // eslint-disable-next-line @typescript-eslint/require-await
+            serviceProvider.runCommandWithCheck.callsFake(async (db, cmd) => {
+              if (cmd.dropIndexes) {
+                if (Array.isArray(cmd.index)) {
+                  throw error;
+                } else if (cmd.index === 'index_1') {
+                  return { nIndexesWas: 2, ok: 1 };
+                } else {
+                  return { nIndexesWas: 3, ok: 1 };
+                }
+              } else if (cmd.buildInfo) {
+                return { version: '4.0.0' };
               } else {
-                return { nIndexesWas: 3, ok: 1 };
+                expect.fail('unknown runCommandWithCheck');
               }
-            } else if (cmd.buildInfo) {
-              return { version: '4.0.0' };
-            } else {
-              expect.fail('unknown runCommandWithCheck');
-            }
+            });
           });
-        });
 
-        it('falls back to multiple dropIndexes calls', async() => {
-          expect(await collection.dropIndexes(['index_1', 'index_2'])).to.deep.equal({ nIndexesWas: 3, ok: 1 });
-        });
-      });
+          it('falls back to multiple dropIndexes calls', async function () {
+            expect(
+              await collection.dropIndexes(['index_1', 'index_2'])
+            ).to.deep.equal({ nIndexesWas: 3, ok: 1 });
+          });
+        }
+      );
 
-      context('when serviceProvider.dropIndexes rejects any other error', () => {
-        let error;
-        beforeEach(() => {
-          error = new Error('Some error');
-          serviceProvider.runCommandWithCheck.rejects(new Error('Some error'));
-        });
+      context(
+        'when serviceProvider.dropIndexes rejects any other error',
+        function () {
+          let error;
+          beforeEach(function () {
+            error = new Error('Some error');
+            serviceProvider.runCommandWithCheck.rejects(
+              new Error('Some error')
+            );
+          });
 
-        it('rejects with error', async() => {
-          let caught;
-          await collection.dropIndexes('index_1').catch(err => { caught = err; });
-          expect(caught.message).to.equal(error.message);
-        });
-      });
+          it('rejects with error', async function () {
+            let caught;
+            await collection.dropIndexes('index_1').catch((err) => {
+              caught = err;
+            });
+            expect(caught.message).to.equal(error.message);
+          });
+        }
+      );
     });
 
-    describe('dropIndex', () => {
-      context('when collection.dropIndexes resolves', () => {
+    describe('dropIndex', function () {
+      context('when collection.dropIndexes resolves', function () {
         let result;
-        beforeEach(() => {
+        beforeEach(function () {
           result = { nIndexesWas: 3, ok: 1 };
           serviceProvider.runCommandWithCheck.resolves(result);
         });
 
-        it('returns the result of serviceProvider.dropIndexes', async() => {
+        it('returns the result of serviceProvider.dropIndexes', async function () {
           expect(await collection.dropIndex('index_1')).to.deep.equal(result);
         });
 
-        it('throws if index is "*"', async() => {
+        it('throws if index is "*"', async function () {
           let caught;
-          await collection.dropIndex('*').catch(err => { caught = err; });
+          await collection.dropIndex('*').catch((err) => {
+            caught = err;
+          });
 
           expect(caught).to.be.instanceOf(MongoshInvalidInputError);
           expect(caught.message).to.contain(
-            'To drop indexes in the collection using \'*\', use db.collection.dropIndexes().'
+            "To drop indexes in the collection using '*', use db.collection.dropIndexes()."
           );
           expect(caught.code).to.equal(CommonErrors.InvalidArgument);
         });
 
-        it('throws if index is an array', async() => {
+        it('throws if index is an array', async function () {
           let caught;
-          await collection.dropIndex(['index-1']).catch(err => { caught = err; });
+          await collection.dropIndex(['index-1']).catch((err) => {
+            caught = err;
+          });
 
           expect(caught).to.be.instanceOf(MongoshInvalidInputError);
           expect(caught.message).to.contain(
@@ -1046,23 +1284,24 @@ describe('Collection', () => {
       });
     });
 
-    describe('totalIndexSize', () => {
-      beforeEach(() => {
+    describe('totalIndexSize', function () {
+      beforeEach(function () {
         const tryNext = sinon.stub();
         tryNext.onCall(0).resolves({ value: 1000 });
         tryNext.onCall(1).resolves(null);
         serviceProvider.aggregate.returns({ tryNext } as any);
       });
 
-      it('returns totalIndexSize', async() => {
+      it('returns totalIndexSize', async function () {
         expect(await collection.totalIndexSize()).to.equal(1000);
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
       });
 
-      it('throws an error if called with verbose', async() => {
+      it('throws an error if called with verbose', async function () {
         let caught;
-        await collection.totalIndexSize(true)
-          .catch(err => { caught = err; });
+        await collection.totalIndexSize(true).catch((err) => {
+          caught = err;
+        });
 
         expect(caught).to.be.instanceOf(MongoshInvalidInputError);
         expect(caught.message).to.contain(
@@ -1072,17 +1311,20 @@ describe('Collection', () => {
       });
     });
 
-    describe('reIndex', () => {
-      it('returns the result of serviceProvider.dropIndexes', async() => {
+    describe('reIndex', function () {
+      it('returns the result of serviceProvider.dropIndexes', async function () {
         expect(await collection.reIndex()).to.deep.equal({ ok: 1 });
-        expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith('db1', {
-          reIndex: 'coll1'
-        });
+        expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
+          'db1',
+          {
+            reIndex: 'coll1',
+          }
+        );
       });
     });
 
-    describe('stats', () => {
-      beforeEach(() => {
+    describe('stats', function () {
+      beforeEach(function () {
         const serviceProviderCursor = stubInterface<ServiceProviderCursor>();
         serviceProviderCursor.limit.returns(serviceProviderCursor);
         serviceProviderCursor.tryNext.returns(undefined as any);
@@ -1094,163 +1336,197 @@ describe('Collection', () => {
         serviceProvider.aggregate.returns({ tryNext } as any);
       });
 
-      it('calls serviceProvider.aggregate on the database with no options', async() => {
+      it('calls serviceProvider.aggregate on the database with no options', async function () {
         await collection.stats();
 
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
-        expect(serviceProvider.aggregate.firstCall.args[0]).to.equal(database._name);
-        expect(serviceProvider.aggregate.firstCall.args[1]).to.equal(collection._name);
+        expect(serviceProvider.aggregate.firstCall.args[0]).to.equal(
+          database._name
+        );
+        expect(serviceProvider.aggregate.firstCall.args[1]).to.equal(
+          collection._name
+        );
         expect(serviceProvider.aggregate.firstCall.args[2][0]).to.deep.equal({
-          '$collStats': {
+          $collStats: {
             storageStats: {
-              scale: 1
-            }
-          }
+              scale: 1,
+            },
+          },
         });
       });
 
-      it('calls serviceProvider.aggregate on the database with the default scale option', async() => {
+      it('calls serviceProvider.aggregate on the database with the default scale option', async function () {
         await collection.stats({ scale: 2 });
 
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
-        expect(serviceProvider.aggregate.firstCall.args[0]).to.equal(database._name);
-        expect(serviceProvider.aggregate.firstCall.args[1]).to.equal(collection._name);
+        expect(serviceProvider.aggregate.firstCall.args[0]).to.equal(
+          database._name
+        );
+        expect(serviceProvider.aggregate.firstCall.args[1]).to.equal(
+          collection._name
+        );
         expect(serviceProvider.aggregate.firstCall.args[2][0]).to.deep.equal({
-          '$collStats': {
+          $collStats: {
             storageStats: {
               // We scale the results ourselves, this checks we are passing the default scale.
-              scale: 1
-            }
-          }
+              scale: 1,
+            },
+          },
         });
       });
 
-      it('calls serviceProvider.aggregate on the database with default scale when legacy scale is passed', async() => {
+      it('calls serviceProvider.aggregate on the database with default scale when legacy scale is passed', async function () {
         await collection.stats(2);
 
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
-        expect(serviceProvider.aggregate.firstCall.args[0]).to.equal(database._name);
-        expect(serviceProvider.aggregate.firstCall.args[1]).to.equal(collection._name);
+        expect(serviceProvider.aggregate.firstCall.args[0]).to.equal(
+          database._name
+        );
+        expect(serviceProvider.aggregate.firstCall.args[1]).to.equal(
+          collection._name
+        );
         expect(serviceProvider.aggregate.firstCall.args[2][0]).to.deep.equal({
-          '$collStats': {
+          $collStats: {
             storageStats: {
               // We scale the results ourselves, this checks we are passing the default scale.
-              scale: 1
+              scale: 1,
+            },
+          },
+        });
+      });
+
+      context(
+        'when the user lacks permissions to check for the sharding cluster collection in config',
+        function () {
+          beforeEach(function () {
+            const serviceProviderCursor =
+              stubInterface<ServiceProviderCursor>();
+            serviceProviderCursor.limit.returns(serviceProviderCursor);
+            serviceProviderCursor.tryNext.returns(undefined as any);
+            // Throw an error when attempting to check permissions.
+            serviceProvider.find.onCall(0).returns(false as any);
+            serviceProvider.find.onCall(1).returns(serviceProviderCursor);
+          });
+
+          context(
+            'when there is more than one collStats document returned',
+            function () {
+              beforeEach(function () {
+                const tryNext = sinon.stub();
+                tryNext.onCall(0).resolves({ storageStats: {} });
+                tryNext.onCall(1).resolves({ storageStats: {} });
+                tryNext.onCall(2).resolves({ storageStats: {} });
+                tryNext.onCall(3).resolves(null);
+                serviceProvider.aggregate.returns({ tryNext } as any);
+              });
+
+              it('returns sharded `true`', async function () {
+                const stats = await collection.stats(2);
+                expect(stats.sharded).to.equal(true);
+              });
             }
-          }
-        });
-      });
+          );
 
-      context('when the user lacks permissions to check for the sharding cluster collection in config', () => {
-        beforeEach(() => {
-          const serviceProviderCursor = stubInterface<ServiceProviderCursor>();
-          serviceProviderCursor.limit.returns(serviceProviderCursor);
-          serviceProviderCursor.tryNext.returns(undefined as any);
-          // Throw an error when attempting to check permissions.
-          serviceProvider.find.onCall(0).returns(false as any);
-          serviceProvider.find.onCall(1).returns(serviceProviderCursor);
-        });
-
-        context('when there is more than one collStats document returned', () => {
-          beforeEach(() => {
-            const tryNext = sinon.stub();
-            tryNext.onCall(0).resolves({ storageStats: {} });
-            tryNext.onCall(1).resolves({ storageStats: {} });
-            tryNext.onCall(2).resolves({ storageStats: {} });
-            tryNext.onCall(3).resolves(null);
-            serviceProvider.aggregate.returns({ tryNext } as any);
+          context('when there is one collStats document returned', function () {
+            it('returns sharded `false`', async function () {
+              const stats = await collection.stats(2);
+              expect(stats.sharded).to.equal(false);
+            });
           });
+        }
+      );
 
-          it('returns sharded `true`', async() => {
-            const stats = await collection.stats(2);
-            expect(stats.sharded).to.equal(true);
-          });
-        });
-
-        context('when there is one collStats document returned', () => {
-          it('returns sharded `false`', async() => {
-            const stats = await collection.stats(2);
-            expect(stats.sharded).to.equal(false);
-          });
-        });
-      });
-
-      context('deprecated fallback', () => {
-        context('when the aggregation fails with error code that is not `13388`', () => {
-          beforeEach(() => {
-            const tryNext = sinon.stub();
-            const mockError: any = new Error('test error');
-            mockError.code = 123;
-            tryNext.onCall(0).rejects(mockError);
-            serviceProvider.aggregate.returns({ tryNext } as any);
-          });
-
-          it('does not run the deprecated collStats command', async() => {
-            const error = await collection.stats().catch(e => e);
-
-            expect(serviceProvider.runCommandWithCheck).to.not.have.been.called;
-            expect(error.message).to.equal('test error');
-          });
-        });
-
-        context('when the aggregation fails with error code `13388`', () => {
-          beforeEach(() => {
-            const tryNext = sinon.stub();
-            const mockError: any = new Error('test error');
-            mockError.code = 13388;
-            tryNext.onCall(0).rejects(mockError);
-            serviceProvider.aggregate.returns({ tryNext } as any);
-          });
-
-          it('runs the deprecated collStats command with the default scale', async() => {
-            await collection.stats();
-
-            expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
-              database._name,
-              { collStats: collection._name, scale: 1 }
-            );
-          });
-
-          it('runs the deprecated collStats command with a custom scale', async() => {
-            await collection.stats({
-              scale: 1024 // Scale to kilobytes.
+      context('deprecated fallback', function () {
+        context(
+          'when the aggregation fails with error code that is not `13388`',
+          function () {
+            beforeEach(function () {
+              const tryNext = sinon.stub();
+              const mockError: any = new Error('test error');
+              mockError.code = 123;
+              tryNext.onCall(0).rejects(mockError);
+              serviceProvider.aggregate.returns({ tryNext } as any);
             });
 
-            expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
-              database._name,
-              { collStats: collection._name, scale: 1024 }
-            );
-          });
+            it('does not run the deprecated collStats command', async function () {
+              const error = await collection.stats().catch((e) => e);
 
-          it('runs the deprecated collStats command with the legacy scale parameter', async() => {
-            await collection.stats(2);
-
-            expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
-              database._name,
-              { collStats: collection._name, scale: 2 }
-            );
-          });
-
-          context('when the fallback collStats command fails', () => {
-            beforeEach(() => {
-              serviceProvider.runCommandWithCheck.rejects(new Error('not our error'));
-            });
-
-            it('surfaces the original aggregation error', async() => {
-              const error = await collection.stats().catch(e => e);
-
-              expect(serviceProvider.runCommandWithCheck).to.have.been.called;
+              expect(serviceProvider.runCommandWithCheck).to.not.have.been
+                .called;
               expect(error.message).to.equal('test error');
             });
-          });
-        });
+          }
+        );
+
+        context(
+          'when the aggregation fails with error code `13388`',
+          function () {
+            beforeEach(function () {
+              const tryNext = sinon.stub();
+              const mockError: any = new Error('test error');
+              mockError.code = 13388;
+              tryNext.onCall(0).rejects(mockError);
+              serviceProvider.aggregate.returns({ tryNext } as any);
+            });
+
+            it('runs the deprecated collStats command with the default scale', async function () {
+              await collection.stats();
+
+              expect(
+                serviceProvider.runCommandWithCheck
+              ).to.have.been.calledWith(database._name, {
+                collStats: collection._name,
+                scale: 1,
+              });
+            });
+
+            it('runs the deprecated collStats command with a custom scale', async function () {
+              await collection.stats({
+                scale: 1024, // Scale to kilobytes.
+              });
+
+              expect(
+                serviceProvider.runCommandWithCheck
+              ).to.have.been.calledWith(database._name, {
+                collStats: collection._name,
+                scale: 1024,
+              });
+            });
+
+            it('runs the deprecated collStats command with the legacy scale parameter', async function () {
+              await collection.stats(2);
+
+              expect(
+                serviceProvider.runCommandWithCheck
+              ).to.have.been.calledWith(database._name, {
+                collStats: collection._name,
+                scale: 2,
+              });
+            });
+
+            context('when the fallback collStats command fails', function () {
+              beforeEach(function () {
+                serviceProvider.runCommandWithCheck.rejects(
+                  new Error('not our error')
+                );
+              });
+
+              it('surfaces the original aggregation error', async function () {
+                const error = await collection.stats().catch((e) => e);
+
+                expect(serviceProvider.runCommandWithCheck).to.have.been.called;
+                expect(error.message).to.equal('test error');
+              });
+            });
+          }
+        );
       });
 
-      context('indexDetails', () => {
+      context('indexDetails', function () {
         let expectedResult;
         let indexesResult;
 
-        beforeEach(() => {
+        beforeEach(function () {
           expectedResult = {
             avgObjSize: 0,
             indexSizes: {},
@@ -1260,185 +1536,222 @@ describe('Collection', () => {
             ns: 'db1.coll1',
             sharded: false,
           };
-          indexesResult = [ { v: 2, key: { k1: 1 }, name: 'k1_1' }, { v: 2, key: { k2: 1 }, name: 'k2_1' }];
+          indexesResult = [
+            { v: 2, key: { k1: 1 }, name: 'k1_1' },
+            { v: 2, key: { k2: 1 }, name: 'k2_1' },
+          ];
           const tryNext = sinon.stub();
           tryNext.onCall(0).resolves({
             storageStats: {
-              indexDetails: expectedResult.indexDetails
-            }
+              indexDetails: expectedResult.indexDetails,
+            },
           });
           tryNext.onCall(1).resolves(null);
           serviceProvider.aggregate.returns({ tryNext } as any);
           serviceProvider.getIndexes.resolves(indexesResult);
         });
-        it('not returned when no args', async() => {
+        it('not returned when no args', async function () {
           const result = await collection.stats();
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { indexDetails, ...expectedResultWithoutIndexDetails } = expectedResult;
+          const { indexDetails, ...expectedResultWithoutIndexDetails } =
+            expectedResult;
           expect(result).to.deep.equal(expectedResultWithoutIndexDetails);
         });
-        it('not returned when options indexDetails: false', async() => {
+        it('not returned when options indexDetails: false', async function () {
           const result = await collection.stats({ indexDetails: false });
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { indexDetails, ...expectedResultWithoutIndexDetails } = expectedResult;
+          const { indexDetails, ...expectedResultWithoutIndexDetails } =
+            expectedResult;
           expect(result).to.deep.equal(expectedResultWithoutIndexDetails);
         });
-        it('returned all when true, even if no key/name set', async() => {
+        it('returned all when true, even if no key/name set', async function () {
           const result = await collection.stats({ indexDetails: true });
           expect(result).to.deep.equal(expectedResult);
         });
-        it('returned only 1 when indexDetailsName set', async() => {
-          const result = await collection.stats({ indexDetails: true, indexDetailsName: 'k2_1' });
-          expect(result).to.deep.equal({ ...expectedResult, indexDetails: { 'k2_1': expectedResult.indexDetails.k2_1 } });
+        it('returned only 1 when indexDetailsName set', async function () {
+          const result = await collection.stats({
+            indexDetails: true,
+            indexDetailsName: 'k2_1',
+          });
+          expect(result).to.deep.equal({
+            ...expectedResult,
+            indexDetails: { k2_1: expectedResult.indexDetails.k2_1 },
+          });
         });
-        it('returned all when indexDetailsName set but not found', async() => {
-          const result = await collection.stats({ indexDetails: true, indexDetailsName: 'k3_1' });
+        it('returned all when indexDetailsName set but not found', async function () {
+          const result = await collection.stats({
+            indexDetails: true,
+            indexDetailsName: 'k3_1',
+          });
           expect(result).to.deep.equal(expectedResult);
         });
-        it('returned only 1 when indexDetailsKey set', async() => {
-          const result = await collection.stats({ indexDetails: true, indexDetailsKey: indexesResult[1].key });
-          expect(result).to.deep.equal({ ...expectedResult, indexDetails: { 'k2_1': expectedResult.indexDetails.k2_1 } });
+        it('returned only 1 when indexDetailsKey set', async function () {
+          const result = await collection.stats({
+            indexDetails: true,
+            indexDetailsKey: indexesResult[1].key,
+          });
+          expect(result).to.deep.equal({
+            ...expectedResult,
+            indexDetails: { k2_1: expectedResult.indexDetails.k2_1 },
+          });
         });
-        it('returned all when indexDetailsKey set but not found', async() => {
-          const result = await collection.stats({ indexDetails: true, indexDetailsKey: { other: 1 } });
+        it('returned all when indexDetailsKey set but not found', async function () {
+          const result = await collection.stats({
+            indexDetails: true,
+            indexDetailsKey: { other: 1 },
+          });
           expect(result).to.deep.equal(expectedResult);
         });
-        it('throws when indexDetailsName and indexDetailsKey are given', async() => {
-          const error = await collection.stats(
-            { indexDetails: true, indexDetailsName: 'k2_1', indexDetailsKey: { other: 1 } }
-          ).catch(e => e);
+        it('throws when indexDetailsName and indexDetailsKey are given', async function () {
+          const error = await collection
+            .stats({
+              indexDetails: true,
+              indexDetailsName: 'k2_1',
+              indexDetailsKey: { other: 1 },
+            })
+            .catch((e) => e);
 
           expect(error).to.be.instanceOf(MongoshInvalidInputError);
-          expect(error.message).to.contain('Cannot filter indexDetails on both indexDetailsKey and indexDetailsName');
+          expect(error.message).to.contain(
+            'Cannot filter indexDetails on both indexDetailsKey and indexDetailsName'
+          );
           expect(error.code).to.equal(CommonErrors.InvalidArgument);
         });
-        it('throws when indexDetailsKey is not an object', async() => {
-          const error = await collection.stats(
-            { indexDetails: true, indexDetailsKey: 'string' } as any
-          ).catch(e => e);
+        it('throws when indexDetailsKey is not an object', async function () {
+          const error = await collection
+            .stats({ indexDetails: true, indexDetailsKey: 'string' } as any)
+            .catch((e) => e);
 
           expect(error).to.be.instanceOf(MongoshInvalidInputError);
-          expect(error.message).to.contain('Expected options.indexDetailsKey to be a document');
+          expect(error.message).to.contain(
+            'Expected options.indexDetailsKey to be a document'
+          );
           expect(error.code).to.equal(CommonErrors.InvalidArgument);
         });
-        it('throws when indexDetailsName is not a string', async() => {
-          const error = await collection.stats(
-            { indexDetails: true, indexDetailsName: {} } as any
-          ).catch(e => e);
+        it('throws when indexDetailsName is not a string', async function () {
+          const error = await collection
+            .stats({ indexDetails: true, indexDetailsName: {} } as any)
+            .catch((e) => e);
 
           expect(error).to.be.instanceOf(MongoshInvalidInputError);
-          expect(error.message).to.contain('Expected options.indexDetailsName to be a string');
+          expect(error.message).to.contain(
+            'Expected options.indexDetailsName to be a string'
+          );
           expect(error.code).to.equal(CommonErrors.InvalidArgument);
         });
       });
 
-      it('throws if serviceProvider.aggregate rejects', async() => {
+      it('throws if serviceProvider.aggregate rejects', async function () {
         const expectedError = new Error();
         const tryNext = sinon.stub();
         tryNext.onCall(0).rejects(expectedError);
         tryNext.onCall(1).resolves(null);
         serviceProvider.aggregate.returns({ tryNext } as any);
-        const caughtError = await collection.stats()
-          .catch(e => e);
+        const caughtError = await collection.stats().catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
 
-      it('throws if serviceProvider.aggregate returns undefined', async() => {
+      it('throws if serviceProvider.aggregate returns undefined', async function () {
         const tryNext = sinon.stub();
         tryNext.onCall(0).resolves(undefined);
         tryNext.onCall(1).resolves(null);
         serviceProvider.aggregate.returns({ tryNext } as any);
-        const error = await collection.stats(
-          { indexDetails: true, indexDetailsName: 'k2_1' }
-        ).catch(e => e);
+        const error = await collection
+          .stats({ indexDetails: true, indexDetailsName: 'k2_1' })
+          .catch((e) => e);
 
         expect(error).to.be.instanceOf(MongoshRuntimeError);
-        expect(error.message).to.contain('Error running $collStats aggregation stage');
+        expect(error.message).to.contain(
+          'Error running $collStats aggregation stage'
+        );
       });
     });
 
-    describe('dataSize', () => {
-      beforeEach(() => {
+    describe('dataSize', function () {
+      beforeEach(function () {
         const tryNext = sinon.stub();
         tryNext.onCall(0).resolves({ value: 1000 });
         tryNext.onCall(1).resolves(null);
         serviceProvider.aggregate.returns({ tryNext } as any);
       });
 
-      it('returns stats.size', async() => {
+      it('returns stats.size', async function () {
         expect(await collection.dataSize()).to.equal(1000);
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
       });
     });
 
-    describe('storageSize', () => {
-      beforeEach(() => {
+    describe('storageSize', function () {
+      beforeEach(function () {
         const tryNext = sinon.stub();
         tryNext.onCall(0).resolves({ value: 1000 });
         tryNext.onCall(1).resolves(null);
         serviceProvider.aggregate.returns({ tryNext } as any);
       });
 
-      it('returns stats.storageSize', async() => {
+      it('returns stats.storageSize', async function () {
         expect(await collection.storageSize()).to.equal(1000);
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
       });
     });
 
-    describe('totalSize', () => {
-      beforeEach(() => {
+    describe('totalSize', function () {
+      beforeEach(function () {
         const tryNext = sinon.stub();
         tryNext.onCall(0).resolves({ value: 1000 });
         tryNext.onCall(1).resolves(null);
         serviceProvider.aggregate.returns({ tryNext } as any);
       });
 
-      it('returns stats.totalSize', async() => {
+      it('returns stats.totalSize', async function () {
         expect(await collection.totalSize()).to.equal(1000);
         expect(serviceProvider.aggregate).to.have.been.calledOnce;
       });
     });
 
-    describe('drop', () => {
-      it('re-throws an error that is not NamespaceNotFound', async() => {
+    describe('drop', function () {
+      it('re-throws an error that is not NamespaceNotFound', async function () {
         const error = new Error();
         serviceProvider.dropCollection.rejects(error);
-        expect(await (collection.drop().catch((e) => e))).to.equal(error);
+        expect(await collection.drop().catch((e) => e)).to.equal(error);
       });
 
-      it('passes through options', async() => {
+      it('passes through options', async function () {
         serviceProvider.listCollections.resolves([{}]);
         serviceProvider.dropCollection.resolves();
         await collection.drop({ promoteValues: false });
         expect(serviceProvider.dropCollection).to.have.been.calledWith(
-          'db1', 'coll1', { promoteValues: false });
+          'db1',
+          'coll1',
+          { promoteValues: false }
+        );
       });
     });
 
-    describe('getFullName', () => {
-      it('returns the namespaced collection name', () => {
+    describe('getFullName', function () {
+      it('returns the namespaced collection name', function () {
         expect(collection.getFullName()).to.equal('db1.coll1');
       });
     });
 
-    describe('getName', () => {
-      it('returns the namespaced collection name', () => {
+    describe('getName', function () {
+      it('returns the namespaced collection name', function () {
         expect(collection.getName()).to.equal('coll1');
       });
     });
 
-    describe('findAndModify', () => {
+    describe('findAndModify', function () {
       let mockResult;
 
-      beforeEach(() => {
+      beforeEach(function () {
         mockResult = { value: {} };
         serviceProvider.findOneAndUpdate.resolves(mockResult);
         serviceProvider.findOneAndReplace.resolves(mockResult);
         serviceProvider.findOneAndDelete.resolves(mockResult);
       });
 
-      it('returns result.value from serviceProvider.findOneAndReplace', async() => {
-        expect(await collection.findAndModify({ query: {}, update: {} })).to.equal(mockResult.value);
+      it('returns result.value from serviceProvider.findOneAndReplace', async function () {
+        expect(
+          await collection.findAndModify({ query: {}, update: {} })
+        ).to.equal(mockResult.value);
         expect(serviceProvider.findOneAndReplace).to.have.been.calledWith(
           collection._database._name,
           collection._name,
@@ -1447,7 +1760,7 @@ describe('Collection', () => {
         );
       });
 
-      it('throws if no query is provided', async() => {
+      it('throws if no query is provided', async function () {
         try {
           await collection.findAndModify({} as any);
         } catch (e: any) {
@@ -1455,7 +1768,7 @@ describe('Collection', () => {
         }
         expect.fail('MongoshInvalidInputError not thrown for findAndModify');
       });
-      it('throws if no argument is provided', async() => {
+      it('throws if no argument is provided', async function () {
         try {
           await (collection.findAndModify as any)();
         } catch (e: any) {
@@ -1464,7 +1777,7 @@ describe('Collection', () => {
         expect.fail('MongoshInvalidInputError not thrown for findAndModify');
       });
 
-      it('calls the service provider with the correct options', async() => {
+      it('calls the service provider with the correct options', async function () {
         const options = {
           remove: true,
           new: true,
@@ -1473,14 +1786,14 @@ describe('Collection', () => {
           bypassDocumentValidation: true,
           writeConcern: { writeConcern: 1 },
           collation: { collation: 1, locale: 'en_US' },
-          arrayFilters: [ { filter: 1 } ]
+          arrayFilters: [{ filter: 1 }],
         };
 
         await collection.findAndModify({
           query: { query: 1 },
           sort: { sort: 1 },
           update: { update: 1 },
-          ...options
+          ...options,
         });
 
         expect(serviceProvider.findOneAndDelete).to.have.been.calledWith(
@@ -1492,23 +1805,21 @@ describe('Collection', () => {
       });
     });
 
-    describe('renameCollection', () => {
+    describe('renameCollection', function () {
       let mockResult;
 
-      beforeEach(() => {
+      beforeEach(function () {
         mockResult = {};
         serviceProvider.renameCollection.resolves(mockResult);
       });
 
-      it('returns { ok: 1 } if the operation is successful', async() => {
-        expect(
-          await collection.renameCollection(
-            'newName'
-          )
-        ).to.deep.equal({ ok: 1 });
+      it('returns { ok: 1 } if the operation is successful', async function () {
+        expect(await collection.renameCollection('newName')).to.deep.equal({
+          ok: 1,
+        });
       });
 
-      it('calls the service provider with dropTarget=false if none is provided', async() => {
+      it('calls the service provider with dropTarget=false if none is provided', async function () {
         await collection.renameCollection('newName');
 
         expect(serviceProvider.renameCollection).to.have.been.calledWith(
@@ -1519,7 +1830,7 @@ describe('Collection', () => {
         );
       });
 
-      it('calls the service provider with the correct options', async() => {
+      it('calls the service provider with the correct options', async function () {
         await collection.renameCollection('newName', true);
 
         expect(serviceProvider.renameCollection).to.have.been.calledWith(
@@ -1530,19 +1841,17 @@ describe('Collection', () => {
         );
       });
 
-      it('rethrows a generic error', async() => {
+      it('rethrows a generic error', async function () {
         const error: any = new Error();
 
         serviceProvider.renameCollection.rejects(error);
 
         expect(
-          await collection.renameCollection(
-            'newName'
-          ).catch(e => e)
+          await collection.renameCollection('newName').catch((e) => e)
         ).to.equal(error);
       });
 
-      it('returns a MongoError with { ok: 0 } instead of throwing', async() => {
+      it('returns a MongoError with { ok: 0 } instead of throwing', async function () {
         const error: any = new Error();
         error.name = 'MongoError';
         error.code = 123;
@@ -1551,19 +1860,15 @@ describe('Collection', () => {
 
         serviceProvider.renameCollection.rejects(error);
 
-        expect(
-          await collection.renameCollection(
-            'newName'
-          )
-        ).to.deep.equal({
+        expect(await collection.renameCollection('newName')).to.deep.equal({
           code: error.code,
           errmsg: error.errmsg,
           codeName: error.codeName,
-          ok: 0
+          ok: 0,
         });
       });
 
-      it('throws an error if newName is not a string', async() => {
+      it('throws an error if newName is not a string', async function () {
         try {
           await collection.renameCollection({} as any);
           expect.fail('expected error');
@@ -1575,130 +1880,130 @@ describe('Collection', () => {
       });
     });
 
-    describe('runCommand', () => {
-      it('calls serviceProvider.runCommand with the collection set', async() => {
+    describe('runCommand', function () {
+      it('calls serviceProvider.runCommand with the collection set', async function () {
         await collection.runCommand('someCommand', {
-          someOption: 1
+          someOption: 1,
         } as any);
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           collection._database._name,
           {
             someCommand: collection._name,
-            someOption: 1
+            someOption: 1,
           }
         );
       });
 
-      it('can be called without options', async() => {
+      it('can be called without options', async function () {
         await collection.runCommand('someCommand');
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           collection._database._name,
           {
-            someCommand: collection._name
+            someCommand: collection._name,
           }
         );
       });
 
-      it('accepts an explicit options object as its first command for legacy compatibility', async() => {
+      it('accepts an explicit options object as its first command for legacy compatibility', async function () {
         await collection.runCommand({ someCommand: 'differenttestns' });
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           collection._database._name,
           {
-            someCommand: 'differenttestns'
+            someCommand: 'differenttestns',
           }
         );
       });
 
-      it('throws an error if commandName is not a string', async() => {
-        const e = await collection.runCommand(
-          42 as any
-        ).catch(e => e);
+      it('throws an error if commandName is not a string', async function () {
+        const e = await collection.runCommand(42 as any).catch((e) => e);
 
         expect(e).to.be.instanceOf(MongoshInvalidInputError);
         expect(e.message).to.include('type string');
         expect(e.code).to.equal(CommonErrors.InvalidArgument);
       });
 
-      it('throws an error if both arguments are options objects', async() => {
-        const e = await collection.runCommand(
-          {}, {}
-        ).catch(e => e);
+      it('throws an error if both arguments are options objects', async function () {
+        const e = await collection.runCommand({}, {}).catch((e) => e);
 
         expect(e).to.be.instanceOf(MongoshInvalidInputError);
-        expect(e.message).to.include('takes a command string as its first arugment');
+        expect(e.message).to.include(
+          'takes a command string as its first arugment'
+        );
         expect(e.code).to.equal(CommonErrors.InvalidArgument);
       });
 
-      it('throws an error if commandName is passed as option', async() => {
-        const e = await collection.runCommand(
-          'commandName', { commandName: 1 } as any
-        ).catch(e => e);
+      it('throws an error if commandName is passed as option', async function () {
+        const e = await collection
+          .runCommand('commandName', { commandName: 1 } as any)
+          .catch((e) => e);
 
         expect(e).to.be.instanceOf(MongoshInvalidInputError);
-        expect(e.message).to.contain('The "commandName" argument cannot be passed as an option to "runCommand".');
+        expect(e.message).to.contain(
+          'The "commandName" argument cannot be passed as an option to "runCommand".'
+        );
         expect(e.code).to.equal(CommonErrors.InvalidArgument);
       });
     });
 
-    describe('explain', () => {
-      it('returns an Explainable object', () => {
+    describe('explain', function () {
+      it('returns an Explainable object', function () {
         expect(collection.explain()).to.have.instanceOf(Explainable);
       });
 
-      it('accepts valid verbosity', () => {
-        expect(
-          collection.explain('queryPlanner')._verbosity
-        ).to.equal('queryPlanner');
+      it('accepts valid verbosity', function () {
+        expect(collection.explain('queryPlanner')._verbosity).to.equal(
+          'queryPlanner'
+        );
 
-        expect(
-          collection.explain('executionStats')._verbosity
-        ).to.equal('executionStats');
+        expect(collection.explain('executionStats')._verbosity).to.equal(
+          'executionStats'
+        );
 
-        expect(
-          collection.explain('allPlansExecution')._verbosity
-        ).to.equal('allPlansExecution');
+        expect(collection.explain('allPlansExecution')._verbosity).to.equal(
+          'allPlansExecution'
+        );
 
-        expect(
-          collection.explain(true)._verbosity
-        ).to.equal('allPlansExecution');
+        expect(collection.explain(true)._verbosity).to.equal(
+          'allPlansExecution'
+        );
 
-        expect(
-          collection.explain(false)._verbosity
-        ).to.equal('queryPlanner');
+        expect(collection.explain(false)._verbosity).to.equal('queryPlanner');
       });
 
-      it('throws in case of non valid verbosity', () => {
+      it('throws in case of non valid verbosity', function () {
         expect(() => {
           collection.explain(0 as any);
         }).to.throw('verbosity must be a string');
       });
 
-      it('sets the right default verbosity', () => {
+      it('sets the right default verbosity', function () {
         const explainable = collection.explain();
         expect(explainable._verbosity).to.equal('queryPlanner');
       });
     });
 
-    describe('latencyStats', () => {
-      it('calls serviceProvider.aggregate on the database with options', async() => {
+    describe('latencyStats', function () {
+      it('calls serviceProvider.aggregate on the database with options', async function () {
         // eslint-disable-next-line @typescript-eslint/require-await
-        serviceProvider.aggregate.returns({ tryNext: async() => null } as any);
+        serviceProvider.aggregate.returns({ tryNext: async () => null } as any);
         await collection.latencyStats({ histograms: true });
 
         expect(serviceProvider.aggregate).to.have.been.calledWith(
           database._name,
           collection._name,
-          [{
-            $collStats: { latencyStats: { histograms: true } }
-          }],
+          [
+            {
+              $collStats: { latencyStats: { histograms: true } },
+            },
+          ],
           {}
         );
       });
 
-      it('returns whatever serviceProvider.aggregate returns', async() => {
+      it('returns whatever serviceProvider.aggregate returns', async function () {
         const tryNext = sinon.stub();
         tryNext.onCall(0).resolves({ 1: 'db1' });
         tryNext.onCall(1).resolves(null);
@@ -1707,17 +2012,16 @@ describe('Collection', () => {
         expect(result).to.deep.equal([{ 1: 'db1' }]);
       });
 
-      it('throws if serviceProvider.aggregate rejects', async() => {
+      it('throws if serviceProvider.aggregate rejects', async function () {
         const expectedError = new Error();
         serviceProvider.aggregate.throws(expectedError);
-        const caughtError = await collection.latencyStats()
-          .catch(e => e);
+        const caughtError = await collection.latencyStats().catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
 
-    describe('initializeUnorderedBulkOp', () => {
-      it('calls serviceProvider.aggregate on the database with options', async() => {
+    describe('initializeUnorderedBulkOp', function () {
+      it('calls serviceProvider.aggregate on the database with options', async function () {
         await collection.initializeUnorderedBulkOp();
 
         expect(serviceProvider.initializeBulkOp).to.have.been.calledWith(
@@ -1727,7 +2031,7 @@ describe('Collection', () => {
         );
       });
 
-      it('returns Bulk wrapping whatever serviceProvider returns', async() => {
+      it('returns Bulk wrapping whatever serviceProvider returns', async function () {
         const expectedResult = { batches: [] } as any;
         serviceProvider.initializeBulkOp.resolves(expectedResult);
         const result = await collection.initializeUnorderedBulkOp();
@@ -1735,16 +2039,17 @@ describe('Collection', () => {
         expect(result._serviceProviderBulkOp).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider.initializeBulkOp rejects', async() => {
+      it('throws if serviceProvider.initializeBulkOp rejects', async function () {
         const expectedError = new Error();
         serviceProvider.initializeBulkOp.throws(expectedError);
-        const caughtError = await collection.initializeUnorderedBulkOp()
-          .catch(e => e);
+        const caughtError = await collection
+          .initializeUnorderedBulkOp()
+          .catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
-    describe('initializeOrderedBulkOp', () => {
-      it('calls serviceProvider.aggregate on the database with options', async() => {
+    describe('initializeOrderedBulkOp', function () {
+      it('calls serviceProvider.aggregate on the database with options', async function () {
         await collection.initializeOrderedBulkOp();
 
         expect(serviceProvider.initializeBulkOp).to.have.been.calledWith(
@@ -1754,7 +2059,7 @@ describe('Collection', () => {
         );
       });
 
-      it('returns Bulk wrapped in whatever serviceProvider returns', async() => {
+      it('returns Bulk wrapped in whatever serviceProvider returns', async function () {
         const expectedResult = { batches: [] } as any;
         serviceProvider.initializeBulkOp.resolves(expectedResult);
         const result = await collection.initializeOrderedBulkOp();
@@ -1762,245 +2067,267 @@ describe('Collection', () => {
         expect(result._serviceProviderBulkOp).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider rejects', async() => {
+      it('throws if serviceProvider rejects', async function () {
         const expectedError = new Error();
         serviceProvider.initializeBulkOp.throws(expectedError);
-        const caughtError = await collection.initializeOrderedBulkOp()
-          .catch(e => e);
+        const caughtError = await collection
+          .initializeOrderedBulkOp()
+          .catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
-    describe('getPlanCache', () => {
-      it('returns a PlanCache object', async() => {
+    describe('getPlanCache', function () {
+      it('returns a PlanCache object', async function () {
         const pc = collection.getPlanCache();
         expect(pc[shellApiType]).to.equal('PlanCache');
-        expect((await toShellResult(pc)).printable).to.equal('PlanCache for collection coll1.');
+        expect((await toShellResult(pc)).printable).to.equal(
+          'PlanCache for collection coll1.'
+        );
       });
     });
-    describe('validate', () => {
-      it('calls serviceProvider.runCommand on the collection default', async() => {
+    describe('validate', function () {
+      it('calls serviceProvider.runCommand on the collection default', async function () {
         serviceProvider.runCommandWithCheck.resolves({ ok: 1 });
         await collection.validate();
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           database._name,
           {
             validate: collection._name,
-            full: false
+            full: false,
           }
         );
       });
-      it('calls serviceProvider.runCommand on the collection with boolean argument', async() => {
+      it('calls serviceProvider.runCommand on the collection with boolean argument', async function () {
         await collection.validate(true);
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           database._name,
           {
             validate: collection._name,
-            full: true
+            full: true,
           }
         );
       });
-      it('calls serviceProvider.runCommand on the collection with options', async() => {
+      it('calls serviceProvider.runCommand on the collection with options', async function () {
         await collection.validate({ full: true, repair: true });
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           database._name,
           {
             validate: collection._name,
             full: true,
-            repair: true
+            repair: true,
           }
         );
       });
 
-      it('returns whatever serviceProvider.runCommand returns', async() => {
+      it('returns whatever serviceProvider.runCommand returns', async function () {
         const expectedResult = { ok: 1 };
         serviceProvider.runCommandWithCheck.resolves(expectedResult);
         const result = await collection.validate();
         expect(result).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider.runCommand rejects', async() => {
+      it('throws if serviceProvider.runCommand rejects', async function () {
         const expectedError = new Error();
         serviceProvider.runCommandWithCheck.rejects(expectedError);
-        const caughtError = await collection.validate()
-          .catch(e => e);
+        const caughtError = await collection.validate().catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
-    describe('mapReduce', () => {
+    describe('mapReduce', function () {
       let mapFn;
       let reduceFn;
-      beforeEach(() => {
-        mapFn = function(): void {};
-        reduceFn = function(keyCustId, valuesPrices): any {
-          return valuesPrices.reduce((t, s) => (t + s));
+      beforeEach(function () {
+        mapFn = function (): void {};
+        reduceFn = function (keyCustId, valuesPrices): any {
+          return valuesPrices.reduce((t, s) => t + s);
         };
       });
-      it('calls serviceProvider.mapReduce on the collection with js args', async() => {
+      it('calls serviceProvider.mapReduce on the collection with js args', async function () {
         serviceProvider.runCommandWithCheck.resolves({ ok: 1 });
-        await collection.mapReduce(mapFn, reduceFn, { out: 'map_reduce_example' });
+        await collection.mapReduce(mapFn, reduceFn, {
+          out: 'map_reduce_example',
+        });
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           database._name,
           {
             mapReduce: collection._name,
             map: mapFn,
             reduce: reduceFn,
-            out: 'map_reduce_example'
+            out: 'map_reduce_example',
           }
         );
       });
-      it('calls serviceProvider.runCommand on the collection with string args', async() => {
+      it('calls serviceProvider.runCommand on the collection with string args', async function () {
         serviceProvider.runCommandWithCheck.resolves({ ok: 1 });
-        await collection.mapReduce(mapFn.toString(), reduceFn.toString(), { out: 'map_reduce_example' });
+        await collection.mapReduce(mapFn.toString(), reduceFn.toString(), {
+          out: 'map_reduce_example',
+        });
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           database._name,
           {
             mapReduce: collection._name,
             map: mapFn.toString(),
             reduce: reduceFn.toString(),
-            out: 'map_reduce_example'
+            out: 'map_reduce_example',
           }
         );
       });
 
-      it('returns whatever serviceProvider.mapReduce returns', async() => {
+      it('returns whatever serviceProvider.mapReduce returns', async function () {
         const expectedResult = { ok: 1 };
         serviceProvider.runCommandWithCheck.resolves(expectedResult);
-        const result = await collection.mapReduce(mapFn, reduceFn, { out: { inline: 1 } });
+        const result = await collection.mapReduce(mapFn, reduceFn, {
+          out: { inline: 1 },
+        });
         expect(result).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider.mapReduce rejects', async() => {
+      it('throws if serviceProvider.mapReduce rejects', async function () {
         const expectedError = new Error();
         serviceProvider.runCommandWithCheck.rejects(expectedError);
-        const caughtError = await collection.mapReduce(mapFn, reduceFn, { out: { inline: 1 } })
-          .catch(e => e);
+        const caughtError = await collection
+          .mapReduce(mapFn, reduceFn, { out: { inline: 1 } })
+          .catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
 
-      it('throws if options is an object and options.out is not defined', async() => {
-        const error = await collection.mapReduce(mapFn, reduceFn, {}).catch(e => e);
+      it('throws if options is an object and options.out is not defined', async function () {
+        const error = await collection
+          .mapReduce(mapFn, reduceFn, {})
+          .catch((e) => e);
         expect(error).to.be.instanceOf(MongoshInvalidInputError);
-        expect(error.message).to.contain('Missing \'out\' option');
+        expect(error.message).to.contain("Missing 'out' option");
         expect(error.code).to.equal(CommonErrors.InvalidArgument);
       });
     });
-    describe('getShardVersion', () => {
-      it('calls serviceProvider.runCommand on the database with options', async() => {
+    describe('getShardVersion', function () {
+      it('calls serviceProvider.runCommand on the database with options', async function () {
         await collection.getShardVersion();
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           ADMIN_DB,
           {
-            getShardVersion: `${database._name}.${collection._name}`
+            getShardVersion: `${database._name}.${collection._name}`,
           }
         );
       });
 
-      it('returns whatever serviceProvider.runCommand returns', async() => {
+      it('returns whatever serviceProvider.runCommand returns', async function () {
         const expectedResult = { ok: 1 };
         serviceProvider.runCommandWithCheck.resolves(expectedResult);
         const result = await collection.getShardVersion();
         expect(result).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider.runCommand rejects', async() => {
+      it('throws if serviceProvider.runCommand rejects', async function () {
         const expectedError = new Error();
         serviceProvider.runCommandWithCheck.rejects(expectedError);
-        const caughtError = await collection.getShardVersion()
-          .catch(e => e);
+        const caughtError = await collection.getShardVersion().catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
-    describe('getShardDistribution', () => {
-      it('throws when collection is not sharded', async() => {
+    describe('getShardDistribution', function () {
+      it('throws when collection is not sharded', async function () {
         const serviceProviderCursor = stubInterface<ServiceProviderCursor>();
         serviceProviderCursor.limit.returns(serviceProviderCursor);
         serviceProviderCursor.tryNext.returns(null);
         serviceProvider.find.returns(serviceProviderCursor as any);
-        const error = await collection.getShardDistribution().catch(e => e);
+        const error = await collection.getShardDistribution().catch((e) => e);
 
         expect(error).to.be.instanceOf(MongoshInvalidInputError);
         expect(error.message).to.contain('is not sharded');
-        expect(error.code).to.equal(ShellApiErrors.NotConnectedToShardedCluster);
+        expect(error.code).to.equal(
+          ShellApiErrors.NotConnectedToShardedCluster
+        );
       });
     });
 
-    describe('analyzeShardKey', () => {
-      it('calls serviceProvider.runCommand on the admin database', async() => {
+    describe('analyzeShardKey', function () {
+      it('calls serviceProvider.runCommand on the admin database', async function () {
         await collection.analyzeShardKey({ myKey: 1 });
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           ADMIN_DB,
           {
             analyzeShardKey: `${database._name}.${collection._name}`,
-            key: { myKey: 1 }
+            key: { myKey: 1 },
           }
         );
       });
 
-      it('returns whatever serviceProvider.runCommand returns', async() => {
+      it('returns whatever serviceProvider.runCommand returns', async function () {
         const expectedResult = { ok: 1 };
         serviceProvider.runCommandWithCheck.resolves(expectedResult);
         const result = await collection.analyzeShardKey({ myKey: 1 });
         expect(result).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider.runCommand rejects', async() => {
+      it('throws if serviceProvider.runCommand rejects', async function () {
         const expectedError = new Error();
         serviceProvider.runCommandWithCheck.rejects(expectedError);
-        const caughtError = await collection.analyzeShardKey({ myKey: 1 })
-          .catch(e => e);
+        const caughtError = await collection
+          .analyzeShardKey({ myKey: 1 })
+          .catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
 
-    describe('configureQueryAnalyzer', () => {
-      it('calls serviceProvider.runCommand on the admin database', async() => {
-        await collection.configureQueryAnalyzer({ mode: 'full', sampleRate: 1 });
+    describe('configureQueryAnalyzer', function () {
+      it('calls serviceProvider.runCommand on the admin database', async function () {
+        await collection.configureQueryAnalyzer({
+          mode: 'full',
+          sampleRate: 1,
+        });
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
           ADMIN_DB,
           {
             configureQueryAnalyzer: `${database._name}.${collection._name}`,
             mode: 'full',
-            sampleRate: new bson.Double(1)
+            sampleRate: new bson.Double(1),
           }
         );
       });
 
-      it('returns whatever serviceProvider.runCommand returns', async() => {
+      it('returns whatever serviceProvider.runCommand returns', async function () {
         const expectedResult = { ok: 1 };
         serviceProvider.runCommandWithCheck.resolves(expectedResult);
-        const result = await collection.configureQueryAnalyzer({ mode: 'full', sampleRate: 1 });
+        const result = await collection.configureQueryAnalyzer({
+          mode: 'full',
+          sampleRate: 1,
+        });
         expect(result).to.deep.equal(expectedResult);
       });
 
-      it('throws if serviceProvider.runCommand rejects', async() => {
+      it('throws if serviceProvider.runCommand rejects', async function () {
         const expectedError = new Error();
         serviceProvider.runCommandWithCheck.rejects(expectedError);
-        const caughtError = await collection.configureQueryAnalyzer({ mode: 'full', sampleRate: 1 })
-          .catch(e => e);
+        const caughtError = await collection
+          .configureQueryAnalyzer({ mode: 'full', sampleRate: 1 })
+          .catch((e) => e);
         expect(caughtError).to.equal(expectedError);
       });
     });
 
-    describe('checkMetadataConsistency', () => {
-      it('calls serviceProvider.runCursorCommand and returns a RunCommandCursor', async() => {
+    describe('checkMetadataConsistency', function () {
+      it('calls serviceProvider.runCursorCommand and returns a RunCommandCursor', async function () {
         const providerCursor = stubInterface<ServiceProviderRunCommandCursor>();
         serviceProvider.runCursorCommand.returns(providerCursor);
         const runCommandCursor = await collection.checkMetadataConsistency();
         expect(runCommandCursor._cursor).to.equal(providerCursor);
         expect(serviceProvider.runCursorCommand).to.have.been.calledWith(
-          'db1', { checkMetadataConsistency: 'coll1' }, {}
+          'db1',
+          { checkMetadataConsistency: 'coll1' },
+          {}
         );
       });
     });
 
-    describe('return information about the collection as metadata', () => {
+    describe('return information about the collection as metadata', function () {
       let serviceProviderCursor: StubbedInstance<ServiceProviderCursor>;
       let proxyCursor;
 
-      beforeEach(() => {
+      beforeEach(function () {
         serviceProviderCursor = stubInterface<ServiceProviderCursor>();
         serviceProviderCursor.limit.returns(serviceProviderCursor);
         serviceProviderCursor.tryNext.resolves({ _id: 'abc' });
@@ -2010,11 +2337,11 @@ describe('Collection', () => {
               return false;
             }
             return (target as any)[prop];
-          }
+          },
         });
       });
 
-      it('works for find()', async() => {
+      it('works for find()', async function () {
         serviceProvider.find.returns(proxyCursor);
         const cursor = collection.find();
         const result = await toShellResult(cursor);
@@ -2029,12 +2356,12 @@ describe('Collection', () => {
         expect(result.source).to.deep.equal({
           namespace: {
             db: 'db1',
-            collection: 'coll1'
-          }
+            collection: 'coll1',
+          },
         });
       });
 
-      it('works for findOne()', async() => {
+      it('works for findOne()', async function () {
         serviceProvider.find.returns(serviceProviderCursor);
         const document = await collection.findOne({ hasBanana: true });
         const result = await toShellResult(document);
@@ -2043,60 +2370,82 @@ describe('Collection', () => {
         expect(result.source).to.deep.equal({
           namespace: {
             db: 'db1',
-            collection: 'coll1'
-          }
+            collection: 'coll1',
+          },
         });
       });
 
-      it('works for getIndexes()', async() => {
+      it('works for getIndexes()', async function () {
         const fakeIndex = { v: 2, key: { _id: 1 }, name: '_id_' };
         serviceProvider.getIndexes.resolves([fakeIndex]);
 
         const indexResult = await collection.getIndexes();
         const result = await toShellResult(indexResult);
         expect(result.type).to.equal(null);
-        expect(result.printable).to.deep.equal([ fakeIndex ]);
+        expect(result.printable).to.deep.equal([fakeIndex]);
         expect(result.source).to.deep.equal({
           namespace: {
             db: 'db1',
-            collection: 'coll1'
-          }
+            collection: 'coll1',
+          },
         });
       });
     });
-    describe('watch', () => {
+    describe('watch', function () {
       let fakeSpCursor: any;
-      beforeEach(() => {
+      beforeEach(function () {
         fakeSpCursor = {
           closed: false,
-          tryNext: async() => {}
+          tryNext: async () => {},
         };
         serviceProvider.watch.returns(fakeSpCursor);
       });
-      it('calls serviceProvider.watch when given no args', async() => {
+      it('calls serviceProvider.watch when given no args', async function () {
         await collection.watch();
-        expect(serviceProvider.watch).to.have.been.calledWith([], {}, {}, collection._database._name, collection._name);
+        expect(serviceProvider.watch).to.have.been.calledWith(
+          [],
+          {},
+          {},
+          collection._database._name,
+          collection._name
+        );
       });
-      it('calls serviceProvider.watch when given pipeline arg', async() => {
+      it('calls serviceProvider.watch when given pipeline arg', async function () {
         const pipeline = [{ $match: { operationType: 'insertOne' } }];
         await collection.watch(pipeline);
-        expect(serviceProvider.watch).to.have.been.calledWith(pipeline, {}, {}, collection._database._name, collection._name);
+        expect(serviceProvider.watch).to.have.been.calledWith(
+          pipeline,
+          {},
+          {},
+          collection._database._name,
+          collection._name
+        );
       });
-      it('calls serviceProvider.watch when given no args', async() => {
+      it('calls serviceProvider.watch when given no args', async function () {
         const pipeline = [{ $match: { operationType: 'insertOne' } }];
         const ops = { batchSize: 1 };
         await collection.watch(pipeline, ops);
-        expect(serviceProvider.watch).to.have.been.calledWith(pipeline, ops, {}, collection._database._name, collection._name);
+        expect(serviceProvider.watch).to.have.been.calledWith(
+          pipeline,
+          ops,
+          {},
+          collection._database._name,
+          collection._name
+        );
       });
 
-      it('returns whatever serviceProvider.watch returns', async() => {
-        const expectedCursor = new ChangeStreamCursor(fakeSpCursor, collection._name, mongo);
+      it('returns whatever serviceProvider.watch returns', async function () {
+        const expectedCursor = new ChangeStreamCursor(
+          fakeSpCursor,
+          collection._name,
+          mongo
+        );
         const result = await collection.watch();
         expect(result).to.deep.equal(expectedCursor);
         expect(collection._mongo._instanceState.currentCursor).to.equal(result);
       });
 
-      it('throws if serviceProvider.watch throws', async() => {
+      it('throws if serviceProvider.watch throws', async function () {
         const expectedError = new Error();
         serviceProvider.watch.throws(expectedError);
         try {
@@ -2109,16 +2458,16 @@ describe('Collection', () => {
       });
     });
 
-    describe('getSearchIndexes', () => {
+    describe('getSearchIndexes', function () {
       let searchIndexes;
 
-      beforeEach(() => {
+      beforeEach(function () {
         searchIndexes = [{ name: 'foo' }, { name: 'bar' }];
         serviceProvider.getSearchIndexes.resolves(searchIndexes);
       });
 
-      context('without name or options', () => {
-        it('calls serviceProvider.listSearchIndexes(), then toArray() on the returned cursor', async() => {
+      context('without name or options', function () {
+        it('calls serviceProvider.listSearchIndexes(), then toArray() on the returned cursor', async function () {
           const result = await collection.getSearchIndexes();
 
           expect(result).to.equal(searchIndexes);
@@ -2131,8 +2480,8 @@ describe('Collection', () => {
         });
       });
 
-      context('with name', () => {
-        it('calls serviceProvider.listSearchIndexes(name), then toArray() on the returned cursor', async() => {
+      context('with name', function () {
+        it('calls serviceProvider.listSearchIndexes(name), then toArray() on the returned cursor', async function () {
           const result = await collection.getSearchIndexes('my-index');
 
           expect(result).to.equal(searchIndexes);
@@ -2140,13 +2489,13 @@ describe('Collection', () => {
           expect(serviceProvider.getSearchIndexes).to.have.been.calledWith(
             'db1',
             'coll1',
-            'my-index',
+            'my-index'
           );
         });
       });
 
-      context('with options', () => {
-        it('calls serviceProvider.listSearchIndexes(options), then toArray() on the returned cursor', async() => {
+      context('with options', function () {
+        it('calls serviceProvider.listSearchIndexes(options), then toArray() on the returned cursor', async function () {
           const options = { allowDiskUse: true };
           const result = await collection.getSearchIndexes(options);
 
@@ -2161,8 +2510,8 @@ describe('Collection', () => {
         });
       });
 
-      context('with name and options', () => {
-        it('calls serviceProvider.listSearchIndexes(name, options), then toArray() on the returned cursor', async() => {
+      context('with name and options', function () {
+        it('calls serviceProvider.listSearchIndexes(name, options), then toArray() on the returned cursor', async function () {
           const options = { allowDiskUse: true };
           const result = await collection.getSearchIndexes('my-index', options);
 
@@ -2178,82 +2527,90 @@ describe('Collection', () => {
       });
     });
 
-    describe('createSearchIndex', () => {
-      beforeEach(() => {
+    describe('createSearchIndex', function () {
+      beforeEach(function () {
         serviceProvider.createSearchIndexes.resolves(['index_1']);
       });
 
-      context('without anything', () => {
-        it('calls serviceProvider.createIndexes', async() => {
+      context('without anything', function () {
+        it('calls serviceProvider.createIndexes', async function () {
           await collection.createSearchIndex();
 
           expect(serviceProvider.createSearchIndexes).to.have.been.calledWith(
             'db1',
             'coll1',
-            [ { name: 'default', definition: {} }]
+            [{ name: 'default', definition: {} }]
           );
         });
       });
 
-      context('with name', () => {
-        it('calls serviceProvider.createIndexes', async() => {
+      context('with name', function () {
+        it('calls serviceProvider.createIndexes', async function () {
           await collection.createSearchIndex('my-index');
 
           expect(serviceProvider.createSearchIndexes).to.have.been.calledWith(
             'db1',
             'coll1',
-            [ { name: 'my-index', definition: {} }]
+            [{ name: 'my-index', definition: {} }]
           );
         });
       });
 
-      context('with options', () => {
-        it('calls serviceProvider.createIndexes', async() => {
+      context('with options', function () {
+        it('calls serviceProvider.createIndexes', async function () {
           await collection.createSearchIndex({ mappings: { dynamic: true } });
 
           expect(serviceProvider.createSearchIndexes).to.have.been.calledWith(
             'db1',
             'coll1',
-            [ { name: 'default', definition: { mappings: { dynamic: true } } }]
+            [{ name: 'default', definition: { mappings: { dynamic: true } } }]
           );
         });
       });
 
-      context('with name, options', () => {
-        it('calls serviceProvider.createIndexes', async() => {
-          await collection.createSearchIndex('my-index', { mappings: { dynamic: true } });
+      context('with name, options', function () {
+        it('calls serviceProvider.createIndexes', async function () {
+          await collection.createSearchIndex('my-index', {
+            mappings: { dynamic: true },
+          });
 
           expect(serviceProvider.createSearchIndexes).to.have.been.calledWith(
             'db1',
             'coll1',
-            [ { name: 'my-index', definition: { mappings: { dynamic: true } } }]
+            [{ name: 'my-index', definition: { mappings: { dynamic: true } } }]
           );
         });
       });
     });
 
-    describe('createSearchIndexes', () => {
-      beforeEach(() => {
+    describe('createSearchIndexes', function () {
+      beforeEach(function () {
         serviceProvider.createSearchIndexes.resolves(['index_1', 'index_2']);
       });
 
-      it('calls serviceProvider.createIndexes', async() => {
-        await collection.createSearchIndexes([{ name: 'foo', definition: { mappings: { dynamic: true } } }, { name: 'bar', definition: {} }]);
+      it('calls serviceProvider.createIndexes', async function () {
+        await collection.createSearchIndexes([
+          { name: 'foo', definition: { mappings: { dynamic: true } } },
+          { name: 'bar', definition: {} },
+        ]);
 
         expect(serviceProvider.createSearchIndexes).to.have.been.calledWith(
           'db1',
           'coll1',
-          [{ name: 'foo', definition: { mappings: { dynamic: true } } }, { name: 'bar', definition: {} }]
+          [
+            { name: 'foo', definition: { mappings: { dynamic: true } } },
+            { name: 'bar', definition: {} },
+          ]
         );
       });
     });
 
-    describe('dropSearchIndex', () => {
-      beforeEach(() => {
+    describe('dropSearchIndex', function () {
+      beforeEach(function () {
         serviceProvider.dropSearchIndex.resolves();
       });
 
-      it('calls serviceProvider.dropSearchIndex', async() => {
+      it('calls serviceProvider.dropSearchIndex', async function () {
         await collection.dropSearchIndex('foo');
 
         expect(serviceProvider.dropSearchIndex).to.have.been.calledWith(
@@ -2264,13 +2621,15 @@ describe('Collection', () => {
       });
     });
 
-    describe('updateSearchIndex', () => {
-      beforeEach(() => {
+    describe('updateSearchIndex', function () {
+      beforeEach(function () {
         serviceProvider.updateSearchIndex.resolves();
       });
 
-      it('calls serviceProvider.updateSearchIndex', async() => {
-        await collection.updateSearchIndex('foo', { mappings: { dynamic: true } });
+      it('calls serviceProvider.updateSearchIndex', async function () {
+        await collection.updateSearchIndex('foo', {
+          mappings: { dynamic: true },
+        });
 
         expect(serviceProvider.updateSearchIndex).to.have.been.calledWith(
           'db1',
@@ -2282,7 +2641,7 @@ describe('Collection', () => {
     });
   });
 
-  describe('fle2', () => {
+  describe('fle2', function () {
     let mongo1: Mongo;
     let mongo2: Mongo;
     let serviceProvider: StubbedInstance<ServiceProvider>;
@@ -2290,9 +2649,8 @@ describe('Collection', () => {
     let bus: StubbedInstance<EventEmitter>;
     let instanceState: ShellInstanceState;
     let collection: Collection;
-    let keyId: any[]
-;
-    beforeEach(() => {
+    let keyId: any[];
+    beforeEach(function () {
       bus = stubInterface<EventEmitter>();
       serviceProvider = stubInterface<ServiceProvider>();
       serviceProvider.runCommand.resolves({ ok: 1 });
@@ -2300,7 +2658,9 @@ describe('Collection', () => {
       serviceProvider.initialDb = 'test';
       serviceProvider.bsonLibrary = bson;
       instanceState = new ShellInstanceState(serviceProvider, bus);
-      keyId = [ { $binary: { base64: 'oh3caogGQ4Sf34ugKnZ7Xw==', subType: '04' } } ];
+      keyId = [
+        { $binary: { base64: 'oh3caogGQ4Sf34ugKnZ7Xw==', subType: '04' } },
+      ];
       mongo1 = new Mongo(
         instanceState,
         undefined,
@@ -2310,8 +2670,8 @@ describe('Collection', () => {
           encryptedFieldsMap: {
             'db1.collfle2': {
               fields: [{ path: 'phoneNumber', keyId, bsonType: 'string' }],
-            }
-          }
+            },
+          },
         },
         undefined,
         serviceProvider
@@ -2327,29 +2687,43 @@ describe('Collection', () => {
       );
     });
 
-    describe('drop', () => {
-      it('does not pass encryptedFields through options when collection is in encryptedFieldsMap', async() => {
+    describe('drop', function () {
+      it('does not pass encryptedFields through options when collection is in encryptedFieldsMap', async function () {
         serviceProvider.dropCollection.resolves();
         await collection.drop();
         expect(serviceProvider.dropCollection).to.have.been.calledWith(
-          'db1', 'collfle2', {}
+          'db1',
+          'collfle2',
+          {}
         );
       });
 
-      it('passes encryptedFields through options when collection is not in encryptedFieldsMap', async() => {
-        serviceProvider.listCollections.resolves([{
-          options: { encryptedFields: { fields: [ { path: 'phoneNumber', keyId, bsonType: 'string' } ] } }
-        }]);
+      it('passes encryptedFields through options when collection is not in encryptedFieldsMap', async function () {
+        serviceProvider.listCollections.resolves([
+          {
+            options: {
+              encryptedFields: {
+                fields: [{ path: 'phoneNumber', keyId, bsonType: 'string' }],
+              },
+            },
+          },
+        ]);
         serviceProvider.dropCollection.resolves();
         await mongo2.getDB('db1').getCollection('collfle2').drop();
         expect(serviceProvider.dropCollection).to.have.been.calledWith(
-          'db1', 'collfle2', { encryptedFields: { fields: [ { path: 'phoneNumber', keyId, bsonType: 'string' } ] } }
+          'db1',
+          'collfle2',
+          {
+            encryptedFields: {
+              fields: [{ path: 'phoneNumber', keyId, bsonType: 'string' }],
+            },
+          }
         );
       });
     });
 
-    describe('compactStructuredEncryptionData', () => {
-      it('calls service provider runCommandWithCheck', async() => {
+    describe('compactStructuredEncryptionData', function () {
+      it('calls service provider runCommandWithCheck', async function () {
         const result = await collection.compactStructuredEncryptionData();
 
         expect(serviceProvider.runCommandWithCheck).to.have.been.calledWith(
@@ -2360,7 +2734,7 @@ describe('Collection', () => {
       });
     });
   });
-  describe('with session', () => {
+  describe('with session', function () {
     let serviceProvider: StubbedInstance<ServiceProvider>;
     let collection: Collection;
     let internalSession: StubbedInstance<ServiceProviderSession>;
@@ -2370,11 +2744,11 @@ describe('Collection', () => {
         m?: string;
         i?: number;
         e?: boolean;
-      }
+      };
     } = {
       renameCollection: { a: ['name'] },
       createIndexes: { a: [[]] },
-      runCommand: { a: ['coll', {} ], m: 'runCommandWithCheck', i: 2 },
+      runCommand: { a: ['coll', {}], m: 'runCommandWithCheck', i: 2 },
       findOne: { m: 'find' },
       insert: { m: 'insertMany' },
       update: { m: 'updateOne', i: 4 },
@@ -2398,13 +2772,21 @@ describe('Collection', () => {
       validate: { m: 'runCommandWithCheck', i: 2 },
       getShardVersion: { m: 'runCommandWithCheck', i: 2 },
       analyzeShardKey: { a: [{ myKey: 1 }], m: 'runCommandWithCheck', i: 2 },
-      configureQueryAnalyzer: { a: [{ mode: 'full', sampleRate: 1 }], m: 'runCommandWithCheck', i: 2 },
+      configureQueryAnalyzer: {
+        a: [{ mode: 'full', sampleRate: 1 }],
+        m: 'runCommandWithCheck',
+        i: 2,
+      },
       latencyStats: { m: 'aggregate' },
       initializeOrderedBulkOp: { m: 'initializeBulkOp' },
       initializeUnorderedBulkOp: { m: 'initializeBulkOp' },
       distinct: { i: 4 },
       estimatedDocumentCount: { i: 2 },
-      findAndModify: { a: [{ query: {}, update: {} }], m: 'findOneAndReplace', i: 4 },
+      findAndModify: {
+        a: [{ query: {}, update: {} }],
+        m: 'findOneAndReplace',
+        i: 4,
+      },
       findOneAndReplace: { i: 4 },
       findOneAndUpdate: { i: 4 },
       replaceOne: { i: 4 },
@@ -2417,7 +2799,7 @@ describe('Collection', () => {
       remove: { m: 'deleteMany' },
       watch: { i: 1 },
       getSearchIndexes: { i: 3 },
-      checkMetadataConsistency: { m: 'runCursorCommand', i: 2 }
+      checkMetadataConsistency: { m: 'runCursorCommand', i: 2 },
     };
     const ignore: (keyof (typeof Collection)['prototype'])[] = [
       'getShardDistribution',
@@ -2430,69 +2812,109 @@ describe('Collection', () => {
       'dropSearchIndex',
       'updateSearchIndex',
     ];
-    const args = [ { query: {} }, {}, { out: 'coll' } ];
-    beforeEach(() => {
+    const args = [{ query: {} }, {}, { out: 'coll' }];
+    beforeEach(function () {
       const bus = stubInterface<EventEmitter>();
       serviceProvider = stubInterface<ServiceProvider>();
       serviceProvider.initialDb = 'test';
       serviceProvider.bsonLibrary = bson;
       internalSession = stubInterface<ServiceProviderSession>();
       serviceProvider.startSession.returns(internalSession);
-      serviceProvider.aggregate.returns(stubInterface<ServiceProviderAggregationCursor>());
+      serviceProvider.aggregate.returns(
+        stubInterface<ServiceProviderAggregationCursor>()
+      );
       serviceProvider.find.returns(stubInterface<ServiceProviderCursor>());
       serviceProvider.getIndexes.resolves([]);
       serviceProvider.createIndexes.resolves(['index_1']);
       serviceProvider.listCollections.resolves([]);
-      serviceProvider.watch.returns({ closed: false, tryNext: async() => {} } as any);
+      serviceProvider.watch.returns({
+        closed: false,
+        tryNext: async () => {},
+      } as any);
       serviceProvider.countDocuments.resolves(1);
       serviceProvider.getSearchIndexes.resolves([]);
       serviceProvider.createSearchIndexes.resolves(['index_1']);
       serviceProvider.dropSearchIndex.resolves();
       serviceProvider.updateSearchIndex.resolves();
 
-      serviceProvider.runCommandWithCheck.resolves({ ok: 1, version: 1, bits: 1, commands: 1, users: [], roles: [], logComponentVerbosity: 1 });
-      [ 'bulkWrite', 'deleteMany', 'deleteOne', 'insert', 'insertMany',
-        'insertOne', 'replaceOne', 'update', 'updateOne', 'updateMany',
-        'findOneAndDelete', 'findOneAndReplace', 'findOneAndUpdate',
-        'findAndModify'
-      ].forEach(
-        k => serviceProvider[k].resolves({ result: {}, value: {} })
-      );
+      serviceProvider.runCommandWithCheck.resolves({
+        ok: 1,
+        version: 1,
+        bits: 1,
+        commands: 1,
+        users: [],
+        roles: [],
+        logComponentVerbosity: 1,
+      });
+      [
+        'bulkWrite',
+        'deleteMany',
+        'deleteOne',
+        'insert',
+        'insertMany',
+        'insertOne',
+        'replaceOne',
+        'update',
+        'updateOne',
+        'updateMany',
+        'findOneAndDelete',
+        'findOneAndReplace',
+        'findOneAndUpdate',
+        'findAndModify',
+      ].forEach((k) => serviceProvider[k].resolves({ result: {}, value: {} }));
       const instanceState = new ShellInstanceState(serviceProvider, bus);
-      const mongo = new Mongo(instanceState, undefined, undefined, undefined, serviceProvider);
+      const mongo = new Mongo(
+        instanceState,
+        undefined,
+        undefined,
+        undefined,
+        serviceProvider
+      );
       const session = mongo.startSession();
       collection = session.getDatabase('db1').getCollection('coll');
     });
-    context('all commands that use the same command in sp', () => {
-      for (const method of Object.getOwnPropertyNames(Collection.prototype).filter(
-        k => !ignore.includes(k as any) && !Object.keys(exceptions).includes(k)
+    context('all commands that use the same command in sp', function () {
+      for (const method of Object.getOwnPropertyNames(
+        Collection.prototype
+      ).filter(
+        (k) =>
+          !ignore.includes(k as any) && !Object.keys(exceptions).includes(k)
       )) {
-        if (!method.startsWith('_') &&
+        if (
+          !method.startsWith('_') &&
           !method.startsWith('print') &&
-          Collection.prototype[method].returnsPromise) {
-          // eslint-disable-next-line no-loop-func
-          it(`passes the session through for ${method}`, async() => {
+          Collection.prototype[method].returnsPromise
+        ) {
+          it(`passes the session through for ${method}`, async function () {
             try {
               await collection[method](...args);
             } catch (e: any) {
-              expect.fail(`Collection.${method} failed, error thrown ${e.message}`);
+              expect.fail(
+                `Collection.${method} failed, error thrown ${e.message}`
+              );
             }
-            expect(serviceProvider[method].calledOnce).to.equal(true, `expected sp.${method} to be called but it was not`);
-            expect((serviceProvider[method].getCall(-1).args[3] as any).session).to.equal(internalSession);
+            expect(serviceProvider[method].calledOnce).to.equal(
+              true,
+              `expected sp.${method} to be called but it was not`
+            );
+            expect(
+              serviceProvider[method].getCall(-1).args[3].session
+            ).to.equal(internalSession);
           });
         }
       }
     });
-    context('all commands that use other methods', () => {
+    context('all commands that use other methods', function () {
       for (const method of Object.keys(exceptions).filter(
-        k => !ignore.includes(k as any)
+        (k) => !ignore.includes(k as any)
       )) {
         const customA = exceptions[method].a || args;
         const customM = exceptions[method].m || method;
         const customI = exceptions[method].i || 3;
         const customE = exceptions[method].e || false;
-        // eslint-disable-next-line no-loop-func
-        it(`passes the session through for ${method} (args=${JSON.stringify(customA)}, sp method = ${customM}, index=${customI}, expectFail=${customE})`, async() => {
+        it(`passes the session through for ${method} (args=${JSON.stringify(
+          customA
+        )}, sp method = ${customM}, index=${customI}, expectFail=${customE})`, async function () {
           try {
             await collection[method](...customA);
             if (customE) {
@@ -2503,14 +2925,23 @@ describe('Collection', () => {
               expect.fail(`${method} failed, error thrown ${e.stack}`);
             }
           }
-          expect(serviceProvider[customM].called).to.equal(true, `expecting sp.${customM} to be called but it was not`);
+          expect(serviceProvider[customM].called).to.equal(
+            true,
+            `expecting sp.${customM} to be called but it was not`
+          );
           const call = serviceProvider[customM].getCall(-1).args[customI];
           if (Array.isArray(call)) {
             for (const k of call) {
-              expect(k.session).to.equal(internalSession, `method ${method} supposed to call sp.${customM} with options at arg ${customI}`);
+              expect(k.session).to.equal(
+                internalSession,
+                `method ${method} supposed to call sp.${customM} with options at arg ${customI}`
+              );
             }
           } else {
-            expect(call.session).to.equal(internalSession, `method ${method} supposed to call sp.${customM} with options at arg ${customI}`);
+            expect(call.session).to.equal(
+              internalSession,
+              `method ${method} supposed to call sp.${customM} with options at arg ${customI}`
+            );
           }
         });
       }

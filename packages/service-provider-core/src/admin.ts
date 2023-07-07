@@ -1,4 +1,4 @@
-import ShellAuthOptions from './shell-auth-options';
+import type ShellAuthOptions from './shell-auth-options';
 import type {
   MongoClientOptions,
   ReadConcern,
@@ -11,30 +11,35 @@ import type {
   ClientSessionOptions,
   ListDatabasesOptions,
   AutoEncryptionOptions,
-  Collection
+  Collection,
 } from './all-transport-types';
 import type { bson as BSON } from './index';
 import type { ReplPlatform } from './platform';
-import {
+import type {
   AWSEncryptionKeyOptions,
   AzureEncryptionKeyOptions,
   ClientEncryption as MongoCryptClientEncryption,
   ClientEncryptionDataKeyProvider,
   FLE,
-  GCPEncryptionKeyOptions
+  GCPEncryptionKeyOptions,
 } from './all-fle-types';
 
 export interface CreateEncryptedCollectionOptions {
-  provider: ClientEncryptionDataKeyProvider,
-  createCollectionOptions: Omit<CreateCollectionOptions, 'encryptedFields'> & { encryptedFields: Document },
-  masterKey?: AWSEncryptionKeyOptions | AzureEncryptionKeyOptions | GCPEncryptionKeyOptions;
+  provider: ClientEncryptionDataKeyProvider;
+  createCollectionOptions: Omit<CreateCollectionOptions, 'encryptedFields'> & {
+    encryptedFields: Document;
+  };
+  masterKey?:
+    | AWSEncryptionKeyOptions
+    | AzureEncryptionKeyOptions
+    | GCPEncryptionKeyOptions;
 }
 
 export interface CheckMetadataConsistencyOptions {
   cursor?: {
-      batchSize: number
-  },
-  checkIndexes?: 1
+    batchSize: number;
+  };
+  checkIndexes?: 1;
 }
 
 export default interface Admin {
@@ -60,7 +65,10 @@ export default interface Admin {
    *
    * @returns {Promise} The promise of command Documents.
    */
-  listDatabases(database: string, options?: ListDatabasesOptions): Promise<Document>;
+  listDatabases(
+    database: string,
+    options?: ListDatabasesOptions
+  ): Promise<Document>;
 
   /**
    * create a new service provider with a new connection.
@@ -92,7 +100,8 @@ export default interface Admin {
     dbName: string,
     collName: string,
     options: CreateCollectionOptions,
-    dbOptions?: DbOptions): Promise<{ ok: number }>;
+    dbOptions?: DbOptions
+  ): Promise<{ ok: number }>;
 
   /**
    * Return read preference for connection.
@@ -145,5 +154,5 @@ export default interface Admin {
     collName: string,
     options: CreateEncryptedCollectionOptions,
     libmongocrypt: MongoCryptClientEncryption
-  ): Promise<{ collection: Collection, encryptedFields: Document }>
+  ): Promise<{ collection: Collection; encryptedFields: Document }>;
 }

@@ -5,9 +5,11 @@
 if (
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  typeof TextDecoder !== 'function' || typeof TextEncoder !== 'function'
+  typeof TextDecoder !== 'function' ||
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  typeof TextEncoder !== 'function'
 ) {
-  // eslint-disable-next-line no-new-func
   Object.assign(Function('return this')(), textEncodingPolyfill());
 }
 

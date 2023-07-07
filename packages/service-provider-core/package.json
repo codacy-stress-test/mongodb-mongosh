@@ -16,8 +16,12 @@
     "prepublish": "npm run compile",
     "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 60000 -r ts-node/register \"./src/**/*.spec.ts\"",
     "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
-    "lint": "eslint --report-unused-disable-directives \"./{src,test}/**/*.{js,ts,tsx}\"",
-    "check": "npm run lint && depcheck --skip-missing=true"
+    "eslint": "eslint",
+    "lint": "npm run eslint && npm run prettier -- --check .",
+    "check": "npm run lint && npm run depcheck",
+    "depcheck": "depcheck",
+    "prettier": "prettier",
+    "reformat": "npm run prettier -- --write . && npm run eslint --fix"
   },
   "license": "Apache-2.0",
   "publishConfig": {
@@ -29,7 +33,11 @@
   "mongosh": {
     "unitTestsOnly": true,
     "ciRequiredOptionalDependencies": {
-      "mongodb-client-encryption": ["darwin", "linux", "win32"]
+      "mongodb-client-encryption": [
+        "darwin",
+        "linux",
+        "win32"
+      ]
     }
   },
   "dependencies": {
@@ -52,5 +60,11 @@
       "uuid",
       "encoding"
     ]
+  },
+  "devDependencies": {
+    "@mongodb-js/prettier-config-devtools": "^1.0.1",
+    "depcheck": "^1.4.3",
+    "eslint": "^7.25.0",
+    "prettier": "^2.8.8"
   }
 }

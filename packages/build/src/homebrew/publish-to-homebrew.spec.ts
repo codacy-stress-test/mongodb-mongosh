@@ -1,11 +1,11 @@
 import chai, { expect } from 'chai';
 import sinon from 'ts-sinon';
-import { GithubRepo } from '@mongodb-js/devtools-github-repo';
+import type { GithubRepo } from '@mongodb-js/devtools-github-repo';
 import { publishToHomebrew } from './publish-to-homebrew';
 
 chai.use(require('sinon-chai'));
 
-describe('Homebrew publish-to-homebrew', () => {
+describe('Homebrew publish-to-homebrew', function () {
   let homebrewCore: GithubRepo;
   let homebrewCoreFork: GithubRepo;
   let createPullRequest: sinon.SinonStub;
@@ -13,7 +13,7 @@ describe('Homebrew publish-to-homebrew', () => {
   let generateFormula: sinon.SinonStub;
   let updateHomebrewFork: sinon.SinonStub;
 
-  beforeEach(() => {
+  beforeEach(function () {
     createPullRequest = sinon.stub();
     httpsSha256 = sinon.stub();
     generateFormula = sinon.stub();
@@ -22,22 +22,24 @@ describe('Homebrew publish-to-homebrew', () => {
     homebrewCore = {
       repo: {
         owner: 'homebrew',
-        repo: 'homebrew-core'
+        repo: 'homebrew-core',
       },
-      createPullRequest: createPullRequest as any
+      createPullRequest: createPullRequest as any,
     } as unknown as GithubRepo;
     homebrewCoreFork = {
       repo: {
         owner: 'mongodb-js',
-        repo: 'homebrew-core'
-      }
+        repo: 'homebrew-core',
+      },
     } as unknown as GithubRepo;
   });
 
-  it('creates and merges a PR on update and cleans up', async() => {
+  it('creates and merges a PR on update and cleans up', async function () {
     httpsSha256
       .rejects()
-      .withArgs('https://registry.npmjs.org/@mongosh/cli-repl/-/cli-repl-1.0.0.tgz')
+      .withArgs(
+        'https://registry.npmjs.org/@mongosh/cli-repl/-/cli-repl-1.0.0.tgz'
+      )
       .resolves('sha');
 
     generateFormula
@@ -53,13 +55,18 @@ describe('Homebrew publish-to-homebrew', () => {
         homebrewFormula: 'new formula',
         homebrewCore,
         homebrewCoreFork,
-        isDryRun: false
+        isDryRun: false,
       })
       .resolves('new-branch');
 
     createPullRequest
       .rejects()
-      .withArgs('mongosh 1.0.0', sinon.match.string, 'mongodb-js:new-branch', 'master')
+      .withArgs(
+        'mongosh 1.0.0',
+        sinon.match.string,
+        'mongodb-js:new-branch',
+        'master'
+      )
       .resolves({ prNumber: 42, url: 'url' });
 
     await publishToHomebrew(
@@ -79,10 +86,12 @@ describe('Homebrew publish-to-homebrew', () => {
     expect(createPullRequest).to.have.been.called;
   });
 
-  it('does not try to push/merge when there is no formula update', async() => {
+  it('does not try to push/merge when there is no formula update', async function () {
     httpsSha256
       .rejects()
-      .withArgs('https://registry.npmjs.org/@mongosh/cli-repl/-/cli-repl-1.0.0.tgz')
+      .withArgs(
+        'https://registry.npmjs.org/@mongosh/cli-repl/-/cli-repl-1.0.0.tgz'
+      )
       .resolves('sha');
 
     generateFormula
@@ -98,7 +107,7 @@ describe('Homebrew publish-to-homebrew', () => {
         homebrewFormula: 'formula',
         homebrewCore,
         homebrewCoreFork,
-        isDryRun: false
+        isDryRun: false,
       })
       .resolves(undefined);
 
@@ -119,10 +128,12 @@ describe('Homebrew publish-to-homebrew', () => {
     expect(createPullRequest).to.not.have.been.called;
   });
 
-  it('silently ignores an error while deleting the PR branch', async() => {
+  it('silently ignores an error while deleting the PR branch', async function () {
     httpsSha256
       .rejects()
-      .withArgs('https://registry.npmjs.org/@mongosh/cli-repl/-/cli-repl-1.0.0.tgz')
+      .withArgs(
+        'https://registry.npmjs.org/@mongosh/cli-repl/-/cli-repl-1.0.0.tgz'
+      )
       .resolves('sha');
 
     generateFormula
@@ -138,13 +149,18 @@ describe('Homebrew publish-to-homebrew', () => {
         homebrewFormula: 'new formula',
         homebrewCore,
         homebrewCoreFork,
-        isDryRun: false
+        isDryRun: false,
       })
       .resolves('new-branch');
 
     createPullRequest
       .rejects()
-      .withArgs('mongosh 1.0.0', sinon.match.string, 'mongodb-js:new-branch', 'master')
+      .withArgs(
+        'mongosh 1.0.0',
+        sinon.match.string,
+        'mongodb-js:new-branch',
+        'master'
+      )
       .resolves({ prNumber: 42, url: 'url' });
 
     await publishToHomebrew(

@@ -1,14 +1,21 @@
-import { returnsPromise, shellApiClassDefault, returnType, deprecated, apiVersions, ShellApiWithMongoClass } from './decorators';
-import Mongo from './mongo';
-import { CommonErrors, MongoshInvalidInputError } from '@mongosh/errors';
 import {
+  returnsPromise,
+  shellApiClassDefault,
+  returnType,
+  deprecated,
+  apiVersions,
+  ShellApiWithMongoClass,
+} from './decorators';
+import type Mongo from './mongo';
+import { CommonErrors, MongoshInvalidInputError } from '@mongosh/errors';
+import type {
   Batch,
   Document,
   WriteConcern,
   OrderedBulkOperation,
   UnorderedBulkOperation,
   FindOperators,
-  CollationOptions
+  CollationOptions,
 } from '@mongosh/service-provider-core';
 import { asPrintable } from './enums';
 import { assertArgsDefinedType, shallowClone } from './helpers';
@@ -121,7 +128,6 @@ export class BulkFindOp extends ShellApiWithMongoClass {
   }
 }
 
-
 @shellApiClassDefault
 export default class Bulk extends ShellApiWithMongoClass {
   _mongo: Mongo;
@@ -131,7 +137,11 @@ export default class Bulk extends ShellApiWithMongoClass {
   _serviceProviderBulkOp: OrderedBulkOperation | UnorderedBulkOperation;
   _ordered: boolean;
 
-  constructor(collection: Collection, innerBulk: OrderedBulkOperation | UnorderedBulkOperation, ordered = false) {
+  constructor(
+    collection: Collection,
+    innerBulk: OrderedBulkOperation | UnorderedBulkOperation,
+    ordered = false
+  ) {
     super();
     this._collection = collection;
     this._mongo = collection._mongo;
@@ -139,7 +149,7 @@ export default class Bulk extends ShellApiWithMongoClass {
     this._batchCounts = {
       nInsertOps: 0,
       nUpdateOps: 0,
-      nRemoveOps: 0
+      nRemoveOps: 0,
     };
     this._executed = false;
     this._ordered = ordered;
@@ -159,20 +169,24 @@ export default class Bulk extends ShellApiWithMongoClass {
    * @param methodArguments
    * @private
    */
-  private _emitBulkApiCall(methodName: string, methodArguments: Document = {}): void {
+  private _emitBulkApiCall(
+    methodName: string,
+    methodArguments: Document = {}
+  ): void {
     this._mongo._instanceState.emitApiCallWithArgs({
       method: methodName,
       class: 'Bulk',
       db: this._collection._database._name,
       coll: this._collection._name,
-      arguments: methodArguments
+      arguments: methodArguments,
     });
   }
 
   @returnsPromise
   @apiVersions([1])
   async execute(writeConcern?: WriteConcern): Promise<BulkWriteResult> {
-    const { result } = await this._serviceProviderBulkOp.execute() as any;
+    // @ts-expect-error TODO(MONGOSH-1507) fix the typing
+    const { result } = await this._serviceProviderBulkOp.execute();
     this._executed = true;
     this._emitBulkApiCall('execute', { writeConcern: writeConcern });
     return new BulkWriteResult(
@@ -203,12 +217,15 @@ export default class Bulk extends ShellApiWithMongoClass {
     return this;
   }
 
-  toJSON(): Record<'nInsertOps' | 'nUpdateOps' | 'nRemoveOps' | 'nBatches', number> {
+  toJSON(): Record<
+    'nInsertOps' | 'nUpdateOps' | 'nRemoveOps' | 'nBatches',
+    number
+  > {
     const batches = this._serviceProviderBulkOp.batches.length;
 
     return {
       ...this._batchCounts,
-      nBatches: batches
+      nBatches: batches,
     };
   }
 
@@ -216,7 +233,10 @@ export default class Bulk extends ShellApiWithMongoClass {
     return JSON.stringify(this.toJSON());
   }
 
-  getOperations(): Pick<Batch, 'originalZeroIndex' | 'batchType' | 'operations'>[] {
+  getOperations(): Pick<
+    Batch,
+    'originalZeroIndex' | 'batchType' | 'operations'
+  >[] {
     if (!this._executed) {
       throw new MongoshInvalidInputError(
         'Cannot call getOperations on an unexecuted Bulk operation',
@@ -226,8 +246,7 @@ export default class Bulk extends ShellApiWithMongoClass {
     return this._serviceProviderBulkOp.batches.map((b) => ({
       originalZeroIndex: b.originalZeroIndex,
       batchType: b.batchType,
-      operations: b.operations
+      operations: b.operations,
     }));
   }
 }
-

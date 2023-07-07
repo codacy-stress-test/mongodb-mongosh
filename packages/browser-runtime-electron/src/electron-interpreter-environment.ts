@@ -1,8 +1,9 @@
-import vm, { Context } from 'vm';
+import type { Context } from 'vm';
+import vm from 'vm';
 
-import {
+import type {
   ContextValue,
-  InterpreterEnvironment
+  InterpreterEnvironment,
 } from '@mongosh/browser-runtime-core';
 
 export class ElectronInterpreterEnvironment implements InterpreterEnvironment {

@@ -1,47 +1,60 @@
 import { expect } from 'chai';
 import Mongo from './mongo';
-import { ADMIN_DB, ALL_PLATFORMS, ALL_SERVER_VERSIONS, ALL_TOPOLOGIES } from './enums';
-import { signatures, toShellResult } from './index';
-import { StubbedInstance, stubInterface } from 'ts-sinon';
 import {
-  bson,
+  ADMIN_DB,
+  ALL_PLATFORMS,
+  ALL_SERVER_VERSIONS,
+  ALL_TOPOLOGIES,
+} from './enums';
+import { signatures, toShellResult } from './index';
+import type { StubbedInstance } from 'ts-sinon';
+import { stubInterface } from 'ts-sinon';
+import type {
   ReadConcern,
   ReadPreference,
   ServiceProvider,
-  WriteConcern
+  WriteConcern,
 } from '@mongosh/service-provider-core';
-import Database from './database';
+import { bson } from '@mongosh/service-provider-core';
+import type Database from './database';
 import { EventEmitter } from 'events';
 import ShellInstanceState from './shell-instance-state';
 import Collection from './collection';
-import Cursor from './cursor';
+import type Cursor from './cursor';
 import ChangeStreamCursor from './change-stream-cursor';
 import NoDatabase from './no-db';
-import { MongoshDeprecatedError, MongoshInternalError, MongoshUnimplementedError } from '@mongosh/errors';
+import {
+  MongoshDeprecatedError,
+  MongoshInternalError,
+  MongoshUnimplementedError,
+} from '@mongosh/errors';
 import { CliServiceProvider } from '../../service-provider-server';
-import { startTestServer, skipIfServerVersion } from '../../../testing/integration-testing-hooks';
+import {
+  startTestServer,
+  skipIfServerVersion,
+} from '../../../testing/integration-testing-hooks';
 import { dummyOptions } from './helpers.spec';
 
 const sampleOpts = {
   causalConsistency: false,
   readConcern: { level: 'majority' } as ReadConcern,
   writeConcern: { w: 1, j: false, wtimeout: 0 } as WriteConcern,
-  readPreference: { mode: 'primary', tagSet: [] } as unknown as ReadPreference
+  readPreference: { mode: 'primary', tagSet: [] } as unknown as ReadPreference,
 };
 
-describe('Mongo', () => {
-  describe('help', () => {
+describe('Mongo', function () {
+  describe('help', function () {
     const apiClass = new Mongo({} as any, '');
-    it('calls help function', async() => {
+    it('calls help function', async function () {
       expect((await toShellResult(apiClass.help())).type).to.equal('Help');
       expect((await toShellResult(apiClass.help)).type).to.equal('Help');
     });
   });
-  describe('signatures', () => {
-    it('type', () => {
+  describe('signatures', function () {
+    it('type', function () {
       expect(signatures.Mongo.type).to.equal('Mongo');
     });
-    it('attributes', () => {
+    it('attributes', function () {
       expect(signatures.Mongo.attributes.show).to.deep.equal({
         type: 'function',
         returnsPromise: true,
@@ -49,35 +62,38 @@ describe('Mongo', () => {
         returnType: { attributes: {}, type: 'unknown' },
         platforms: ALL_PLATFORMS,
         topologies: ALL_TOPOLOGIES,
-        apiVersions: [ 1, Infinity ],
+        apiVersions: [1, Infinity],
         serverVersions: ALL_SERVER_VERSIONS,
         isDirectShellCommand: false,
         acceptsRawInput: false,
-        shellCommandCompleter: undefined
+        shellCommandCompleter: undefined,
       });
     });
   });
-  describe('Metadata', () => {
+  describe('Metadata', function () {
     const MONGO_URI = 'localhost:37017';
-    const MONGO_CONNECTION_STRING = 'mongodb://localhost:37017/?directConnection=true&serverSelectionTimeoutMS=2000';
+    const MONGO_CONNECTION_STRING =
+      'mongodb://localhost:37017/?directConnection=true&serverSelectionTimeoutMS=2000';
     const mongo = new Mongo({} as any, MONGO_URI);
 
-    describe('toShellResult', () => {
-      it('value', async() => {
-        expect((await toShellResult(mongo)).printable).to.equal(MONGO_CONNECTION_STRING);
+    describe('toShellResult', function () {
+      it('value', async function () {
+        expect((await toShellResult(mongo)).printable).to.equal(
+          MONGO_CONNECTION_STRING
+        );
       });
-      it('type', async() => {
+      it('type', async function () {
         expect((await toShellResult(mongo)).type).to.equal('Mongo');
       });
     });
 
-    describe('getURI', () => {
-      it('returns the connection string of active connection', () => {
+    describe('getURI', function () {
+      it('returns the connection string of active connection', function () {
         expect(mongo.getURI()).to.equal(MONGO_CONNECTION_STRING);
       });
     });
   });
-  describe('commands', () => {
+  describe('commands', function () {
     const driverSession = { driverSession: 1 };
     let mongo: Mongo;
     let serviceProvider: StubbedInstance<ServiceProvider>;
@@ -85,7 +101,7 @@ describe('Mongo', () => {
     let bus: StubbedInstance<EventEmitter>;
     let instanceState: ShellInstanceState;
 
-    beforeEach(() => {
+    beforeEach(function () {
       bus = stubInterface<EventEmitter>();
       serviceProvider = stubInterface<ServiceProvider>();
       serviceProvider.initialDb = 'test';
@@ -93,14 +109,20 @@ describe('Mongo', () => {
       serviceProvider.runCommand.resolves({ ok: 1 });
       serviceProvider.startSession.returns({ driverSession: 1 } as any);
       instanceState = new ShellInstanceState(serviceProvider, bus);
-      mongo = new Mongo(instanceState, undefined, undefined, undefined, serviceProvider);
+      mongo = new Mongo(
+        instanceState,
+        undefined,
+        undefined,
+        undefined,
+        serviceProvider
+      );
       database = stubInterface<Database>();
       instanceState.currentDb = database;
     });
-    describe('show', () => {
+    describe('show', function () {
       ['databases', 'dbs'].forEach((t) => {
-        describe(t, () => {
-          it('calls serviceProvider.listDatabases on the admin database', async() => {
+        describe(t, function () {
+          it('calls serviceProvider.listDatabases on the admin database', async function () {
             const expectedResult = { ok: 1, databases: [] };
             serviceProvider.listDatabases.resolves(expectedResult);
             await mongo.show(t);
@@ -109,7 +131,7 @@ describe('Mongo', () => {
             );
           });
 
-          it('returns ShowDatabasesResult CommandResult', async() => {
+          it('returns ShowDatabasesResult CommandResult', async function () {
             const expectedResult = { ok: 1, databases: ['a', 'b'] };
             serviceProvider.listDatabases.resolves(expectedResult);
             const result = await mongo.show(t);
@@ -117,34 +139,35 @@ describe('Mongo', () => {
             expect(result.type).to.equal('ShowDatabasesResult');
           });
 
-          it('throws if serviceProvider.listCommands rejects', async() => {
+          it('throws if serviceProvider.listCommands rejects', async function () {
             const expectedError = new Error();
             serviceProvider.listDatabases.rejects(expectedError);
-            const caughtError = await mongo.show(t)
-              .catch(e => e);
+            const caughtError = await mongo.show(t).catch((e) => e);
             expect(caughtError).to.equal(expectedError);
           });
         });
       });
       ['collections', 'tables'].forEach((t) => {
-        describe(t, () => {
-          it('calls database.getCollectionNames', async() => {
+        describe(t, function () {
+          it('calls database.getCollectionNames', async function () {
             const expectedResult = [
               { name: 'a', badge: '' },
-              { name: 'b', badge: '' }
+              { name: 'b', badge: '' },
             ];
             database._getCollectionNamesWithTypes.resolves(expectedResult);
             await mongo.show(t);
-            expect(database._getCollectionNamesWithTypes).to.have.been.calledWith({
+            expect(
+              database._getCollectionNamesWithTypes
+            ).to.have.been.calledWith({
               promoteLongs: true,
-              readPreference: 'primaryPreferred'
+              readPreference: 'primaryPreferred',
             });
           });
 
-          it('returns ShowCollectionsResult CommandResult', async() => {
+          it('returns ShowCollectionsResult CommandResult', async function () {
             const expectedResult = [
               { name: 'a', badge: '' },
-              { name: 'b', badge: '' }
+              { name: 'b', badge: '' },
             ];
             database._getCollectionNamesWithTypes.resolves(expectedResult);
             const result = await mongo.show(t);
@@ -152,26 +175,23 @@ describe('Mongo', () => {
             expect(result.type).to.equal('ShowCollectionsResult');
           });
 
-          it('throws if database.getCollectionNames rejects', async() => {
+          it('throws if database.getCollectionNames rejects', async function () {
             const expectedError = new Error();
             database._getCollectionNamesWithTypes.rejects(expectedError);
-            const caughtError = await mongo.show(t)
-              .catch(e => e);
+            const caughtError = await mongo.show(t).catch((e) => e);
             expect(caughtError).to.equal(expectedError);
           });
         });
       });
-      describe('users', () => {
-        it('calls database.getUsers', async() => {
+      describe('users', function () {
+        it('calls database.getUsers', async function () {
           const expectedResult = { ok: 1, users: [] };
           database.getUsers.resolves(expectedResult);
           await mongo.show('users');
-          expect(database.getUsers).to.have.been.calledWith(
-
-          );
+          expect(database.getUsers).to.have.been.calledWith();
         });
 
-        it('returns ShowResult CommandResult', async() => {
+        it('returns ShowResult CommandResult', async function () {
           const expectedResult = { ok: 1, users: ['a', 'b'] };
           database.getUsers.resolves(expectedResult);
           const result = await mongo.show('users');
@@ -179,25 +199,24 @@ describe('Mongo', () => {
           expect(result.type).to.equal('ShowResult');
         });
 
-        it('throws if database.getUsers rejects', async() => {
+        it('throws if database.getUsers rejects', async function () {
           const expectedError = new Error();
           database.getUsers.rejects(expectedError);
-          const caughtError = await mongo.show('users')
-            .catch(e => e);
+          const caughtError = await mongo.show('users').catch((e) => e);
           expect(caughtError).to.equal(expectedError);
         });
       });
-      describe('roles', () => {
-        it('calls database.getRoles', async() => {
+      describe('roles', function () {
+        it('calls database.getRoles', async function () {
           const expectedResult = { ok: 1, roles: [] };
           database.getRoles.resolves(expectedResult);
           await mongo.show('roles');
-          expect(database.getRoles).to.have.been.calledWith(
-            { showBuiltinRoles: true }
-          );
+          expect(database.getRoles).to.have.been.calledWith({
+            showBuiltinRoles: true,
+          });
         });
 
-        it('returns ShowResult CommandResult', async() => {
+        it('returns ShowResult CommandResult', async function () {
           const expectedResult = { ok: 1, roles: ['a', 'b'] };
           database.getRoles.resolves(expectedResult);
           const result = await mongo.show('roles');
@@ -205,33 +224,32 @@ describe('Mongo', () => {
           expect(result.type).to.equal('ShowResult');
         });
 
-        it('throws if database.getRoles rejects', async() => {
+        it('throws if database.getRoles rejects', async function () {
           const expectedError = new Error();
           database.getRoles.rejects(expectedError);
-          const caughtError = await mongo.show('roles')
-            .catch(e => e);
+          const caughtError = await mongo.show('roles').catch((e) => e);
           expect(caughtError).to.equal(expectedError);
         });
       });
-      describe('log', () => {
-        it('calls database.adminCommand without arg', async() => {
+      describe('log', function () {
+        it('calls database.adminCommand without arg', async function () {
           const expectedResult = { ok: 1, log: [] };
           database.adminCommand.resolves(expectedResult);
           await mongo.show('log');
-          expect(database.adminCommand).to.have.been.calledWith(
-            { getLog: 'global' }
-          );
+          expect(database.adminCommand).to.have.been.calledWith({
+            getLog: 'global',
+          });
         });
-        it('calls database.adminCommand with arg', async() => {
+        it('calls database.adminCommand with arg', async function () {
           const expectedResult = { ok: 1, log: [] };
           database.adminCommand.resolves(expectedResult);
           await mongo.show('log', 'other');
-          expect(database.adminCommand).to.have.been.calledWith(
-            { getLog: 'other' }
-          );
+          expect(database.adminCommand).to.have.been.calledWith({
+            getLog: 'other',
+          });
         });
 
-        it('returns ShowResult CommandResult', async() => {
+        it('returns ShowResult CommandResult', async function () {
           const expectedResult = { ok: 1, log: ['a', 'b'] };
           database.adminCommand.resolves(expectedResult);
           const result = await mongo.show('log');
@@ -239,25 +257,24 @@ describe('Mongo', () => {
           expect(result.type).to.equal('ShowResult');
         });
 
-        it('throws if database.adminCommand rejects', async() => {
+        it('throws if database.adminCommand rejects', async function () {
           const expectedError = new Error();
           database.adminCommand.rejects(expectedError);
-          const caughtError = await mongo.show('log')
-            .catch(e => e);
+          const caughtError = await mongo.show('log').catch((e) => e);
           expect(caughtError).to.equal(expectedError);
         });
       });
-      describe('logs', () => {
-        it('calls database.adminCommand', async() => {
+      describe('logs', function () {
+        it('calls database.adminCommand', async function () {
           const expectedResult = { ok: 1, names: [] };
           database.adminCommand.resolves(expectedResult);
           await mongo.show('logs');
-          expect(database.adminCommand).to.have.been.calledWith(
-            { getLog: '*' }
-          );
+          expect(database.adminCommand).to.have.been.calledWith({
+            getLog: '*',
+          });
         });
 
-        it('returns ShowResult CommandResult', async() => {
+        it('returns ShowResult CommandResult', async function () {
           const expectedResult = { ok: 1, names: ['a', 'b'] };
           database.adminCommand.resolves(expectedResult);
           const result = await mongo.show('logs');
@@ -265,27 +282,28 @@ describe('Mongo', () => {
           expect(result.type).to.equal('ShowResult');
         });
 
-        it('throws if database.adminCommand rejects', async() => {
+        it('throws if database.adminCommand rejects', async function () {
           const expectedError = new Error();
           database.adminCommand.rejects(expectedError);
-          const caughtError = await mongo.show('logs')
-            .catch(e => e);
+          const caughtError = await mongo.show('logs').catch((e) => e);
           expect(caughtError).to.equal(expectedError);
         });
       });
-      describe('profile', () => {
-        it('calls database.count but not find when count < 1', async() => {
+      describe('profile', function () {
+        it('calls database.count but not find when count < 1', async function () {
           const syscoll = stubInterface<Collection>();
           database.getCollection.returns(syscoll);
           syscoll.countDocuments.resolves(0);
           syscoll.find.rejects(new Error());
           const result = await mongo.show('profile');
-          expect(database.getCollection).to.have.been.calledWith('system.profile');
+          expect(database.getCollection).to.have.been.calledWith(
+            'system.profile'
+          );
           expect(syscoll.countDocuments).to.have.been.calledWith({});
           expect(result.type).to.equal('ShowProfileResult');
           expect(result.value).to.deep.equal({ count: 0 });
         });
-        it('calls database.count and find when count > 0', async() => {
+        it('calls database.count and find when count > 0', async function () {
           const expectedResult = [{ a: 'a' }, { b: 'b' }];
           const syscoll = stubInterface<Collection>();
           const cursor = stubInterface<Cursor>();
@@ -296,65 +314,69 @@ describe('Mongo', () => {
           syscoll.countDocuments.resolves(1);
           syscoll.find.resolves(cursor);
           const result = await mongo.show('profile');
-          expect(database.getCollection).to.have.been.calledWith('system.profile');
+          expect(database.getCollection).to.have.been.calledWith(
+            'system.profile'
+          );
           expect(syscoll.countDocuments).to.have.been.calledWith({});
           expect(cursor.sort).to.have.been.calledWith({ $natural: -1 });
           expect(cursor.limit).to.have.been.calledWith(5);
           expect(cursor.toArray).to.have.been.calledWith();
           expect(result.type).to.equal('ShowProfileResult');
-          expect(result.value).to.deep.equal({ count: 1, result: expectedResult });
+          expect(result.value).to.deep.equal({
+            count: 1,
+            result: expectedResult,
+          });
         });
 
-        it('throws if collection.find throws', async() => {
+        it('throws if collection.find throws', async function () {
           const syscoll = stubInterface<Collection>();
           database.getCollection.returns(syscoll);
           syscoll.countDocuments.resolves(1);
           const expectedError = new Error();
           syscoll.find.throws(expectedError);
-          const caughtError = await mongo.show('profile')
-            .catch(e => e);
+          const caughtError = await mongo.show('profile').catch((e) => e);
           expect(caughtError).to.equal(expectedError);
         });
-        it('throws if collection.countDocuments rejects', async() => {
+        it('throws if collection.countDocuments rejects', async function () {
           const syscoll = stubInterface<Collection>();
           database.getCollection.returns(syscoll);
           const expectedError = new Error();
           syscoll.countDocuments.rejects(expectedError);
-          const caughtError = await mongo.show('profile')
-            .catch(e => e);
+          const caughtError = await mongo.show('profile').catch((e) => e);
           expect(caughtError).to.equal(expectedError);
         });
       });
 
-      describe('startupWarnings', () => {
-        it('calls database.adminCommand', async() => {
+      describe('startupWarnings', function () {
+        it('calls database.adminCommand', async function () {
           const expectedResult = { ok: 1, log: [] };
           database.adminCommand.resolves(expectedResult);
           await mongo.show('startupWarnings');
-          expect(database.adminCommand).to.have.been.calledWith(
-            { getLog: 'startupWarnings' }
-          );
+          expect(database.adminCommand).to.have.been.calledWith({
+            getLog: 'startupWarnings',
+          });
         });
 
-        it('returns ShowBannerResult CommandResult', async() => {
+        it('returns ShowBannerResult CommandResult', async function () {
           const expectedResult = {
             ok: 1,
             log: [
               '{"t":{"$date":"2022-05-17T11:16:16.597+02:00"},"s":"I",  "c":"STORAGE",  "id":22297,   "ctx":"initandlisten","msg":"Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem","tags":["startupWarnings"]}\n',
               '{"t":{"$date":"2022-05-17T11:16:16.778+02:00"},"s":"W",  "c":"CONTROL",  "id":22120,   "ctx":"initandlisten","msg":"Access control is not enabled for the database. Read and write access to data and configuration is unrestricted","tags":["startupWarnings"]}\n',
-            ]
+            ],
           };
           database.adminCommand.resolves(expectedResult);
           const result = await mongo.show('startupWarnings');
           expect(result.value).to.deep.equal({
             header: 'The server generated these startup warnings when booting',
-            content: '2022-05-17T11:16:16.597+02:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem\n' +
-              '2022-05-17T11:16:16.778+02:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted'
+            content:
+              '2022-05-17T11:16:16.597+02:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem\n' +
+              '2022-05-17T11:16:16.778+02:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted',
           });
           expect(result.type).to.equal('ShowBannerResult');
         });
 
-        it('returns null database.adminCommand rejects', async() => {
+        it('returns null database.adminCommand rejects', async function () {
           const expectedError = new Error();
           database.adminCommand.rejects(expectedError);
           const result = await mongo.show('startupWarnings');
@@ -363,30 +385,30 @@ describe('Mongo', () => {
         });
       });
 
-      describe('automationNotices', () => {
-        it('calls database.hello', async() => {
+      describe('automationNotices', function () {
+        it('calls database.hello', async function () {
           const expectedResult = { ok: 1 };
           database.hello.resolves(expectedResult);
           await mongo.show('automationNotices');
           expect(database.hello).to.have.been.calledWith();
         });
 
-        it('returns ShowBannerResult CommandResult', async() => {
+        it('returns ShowBannerResult CommandResult', async function () {
           const expectedResult = {
             ok: 1,
-            automationServiceDescriptor: 'some_service'
+            automationServiceDescriptor: 'some_service',
           };
           database.hello.resolves(expectedResult);
           const result = await mongo.show('automationNotices');
           expect(result.value).to.deep.equal({
             content:
               "This server is managed by automation service 'some_service'.\n" +
-              'Many administrative actions are inappropriate, and may be automatically reverted.'
+              'Many administrative actions are inappropriate, and may be automatically reverted.',
           });
           expect(result.type).to.equal('ShowBannerResult');
         });
 
-        it('returns null database.hello rejects', async() => {
+        it('returns null database.hello rejects', async function () {
           const expectedError = new Error();
           database.hello.rejects(expectedError);
           const result = await mongo.show('automationNotices');
@@ -395,10 +417,10 @@ describe('Mongo', () => {
         });
       });
 
-      describe('nonGenuineMongoDBCheck', () => {
-        it('returns no warnings for a genuine mongodb connection', async() => {
+      describe('nonGenuineMongoDBCheck', function () {
+        it('returns no warnings for a genuine mongodb connection', async function () {
           instanceState.connectionInfo = {
-            extraInfo: { is_genuine: true }
+            extraInfo: { is_genuine: true },
           };
 
           const result = await mongo.show('nonGenuineMongoDBCheck');
@@ -406,53 +428,57 @@ describe('Mongo', () => {
           expect(result.value).to.be.null;
         });
 
-        context('when connected deployment is not a genuine mongodb deployment', () => {
-          beforeEach(() => {
-            instanceState.connectionInfo = {
-              extraInfo: { is_genuine: false }
-            };
-          });
+        context(
+          'when connected deployment is not a genuine mongodb deployment',
+          function () {
+            beforeEach(function () {
+              instanceState.connectionInfo = {
+                extraInfo: { is_genuine: false },
+              };
+            });
 
-          const warning = [
-            'This server or service appears to be an emulation of MongoDB rather than an official MongoDB product.',
-            'Some documented MongoDB features may work differently, be entirely missing or incomplete, or have unexpected performance characteristics.',
-            'To learn more please visit: https://dochub.mongodb.org/core/non-genuine-mongodb-server-warning.',
-          ].join('\n');
+            const warning = [
+              'This server or service appears to be an emulation of MongoDB rather than an official MongoDB product.',
+              'Some documented MongoDB features may work differently, be entirely missing or incomplete, or have unexpected performance characteristics.',
+              'To learn more please visit: https://dochub.mongodb.org/core/non-genuine-mongodb-server-warning.',
+            ].join('\n');
 
-          context('and can be determined by serverBuildInfo', () => {
-            it('returns warnings', async() => {
-              const result = await mongo.show('nonGenuineMongoDBCheck');
-              expect(result.type).to.equal('ShowBannerResult');
-              expect(result.value).to.deep.equal({
-                header: 'Warning: Non-Genuine MongoDB Detected',
-                content: warning
+            context('and can be determined by serverBuildInfo', function () {
+              it('returns warnings', async function () {
+                const result = await mongo.show('nonGenuineMongoDBCheck');
+                expect(result.type).to.equal('ShowBannerResult');
+                expect(result.value).to.deep.equal({
+                  header: 'Warning: Non-Genuine MongoDB Detected',
+                  content: warning,
+                });
               });
             });
-          });
 
-          context('and can be determined by serverCmdLineOpts', () => {
-            it('returns warnings', async() => {
-              const result = await mongo.show('nonGenuineMongoDBCheck');
-              expect(result.type).to.equal('ShowBannerResult');
-              expect(result.value).to.deep.equal({
-                header: 'Warning: Non-Genuine MongoDB Detected',
-                content: warning
+            context('and can be determined by serverCmdLineOpts', function () {
+              it('returns warnings', async function () {
+                const result = await mongo.show('nonGenuineMongoDBCheck');
+                expect(result.type).to.equal('ShowBannerResult');
+                expect(result.value).to.deep.equal({
+                  header: 'Warning: Non-Genuine MongoDB Detected',
+                  content: warning,
+                });
               });
             });
-          });
-        });
+          }
+        );
       });
 
-      describe('invalid command', () => {
-        it('throws an error', async() => {
-          const caughtError = await mongo.show('aslkdjhekjghdskjhfds')
-            .catch(e => e);
+      describe('invalid command', function () {
+        it('throws an error', async function () {
+          const caughtError = await mongo
+            .show('aslkdjhekjghdskjhfds')
+            .catch((e) => e);
           expect(caughtError.name).to.equal('MongoshInvalidInputError');
         });
       });
     });
-    describe('getReadPrefMode', () => {
-      it('calls serviceProvider.getReadPreference', () => {
+    describe('getReadPrefMode', function () {
+      it('calls serviceProvider.getReadPreference', function () {
         const expectedResult = { mode: 'primary', tagSet: [] } as any;
         serviceProvider.getReadPreference.returns(expectedResult);
         const res = mongo.getReadPrefMode();
@@ -460,8 +486,8 @@ describe('Mongo', () => {
         expect(res).to.equal(expectedResult.mode);
       });
     });
-    describe('getReadPref', () => {
-      it('calls serviceProvider.getReadPreference', () => {
+    describe('getReadPref', function () {
+      it('calls serviceProvider.getReadPreference', function () {
         const expectedResult = { mode: 'primary', tagSet: [] } as any;
         serviceProvider.getReadPreference.returns(expectedResult);
         const res = mongo.getReadPref();
@@ -469,8 +495,8 @@ describe('Mongo', () => {
         expect(res).to.equal(expectedResult);
       });
     });
-    describe('getReadPrefTagSet', () => {
-      it('calls serviceProvider.getReadPreference', () => {
+    describe('getReadPrefTagSet', function () {
+      it('calls serviceProvider.getReadPreference', function () {
         const expectedResult = { mode: 'primary', tagSet: [] } as any;
         serviceProvider.getReadPreference.returns(expectedResult);
         const res = mongo.getReadPrefTagSet();
@@ -478,8 +504,8 @@ describe('Mongo', () => {
         expect(res).to.equal(expectedResult.tags);
       });
     });
-    describe('getReadConcern', () => {
-      it('calls serviceProvider.getReadConcern', () => {
+    describe('getReadConcern', function () {
+      it('calls serviceProvider.getReadConcern', function () {
         const expectedResult = { level: 'majority' };
         serviceProvider.getReadConcern.returns(expectedResult as any);
         const res = mongo.getReadConcern();
@@ -487,14 +513,14 @@ describe('Mongo', () => {
         expect(res).to.equal('majority');
       });
 
-      it('returns undefined if not set', () => {
+      it('returns undefined if not set', function () {
         serviceProvider.getReadConcern.returns(undefined);
         const res = mongo.getReadConcern();
         expect(serviceProvider.getReadConcern).to.have.been.calledWith();
         expect(res).to.equal(undefined);
       });
 
-      it('throws InternalError if getReadConcern errors', () => {
+      it('throws InternalError if getReadConcern errors', function () {
         const expectedError = new Error();
         serviceProvider.getReadConcern.throws(expectedError);
         try {
@@ -505,8 +531,8 @@ describe('Mongo', () => {
         expect.fail();
       });
     });
-    describe('getWriteConcern', () => {
-      it('calls serviceProvider.getWriteConcern', () => {
+    describe('getWriteConcern', function () {
+      it('calls serviceProvider.getWriteConcern', function () {
         const expectedResult: WriteConcern = { w: 'majority', wtimeout: 200 };
         serviceProvider.getWriteConcern.returns(expectedResult as any);
         const res = mongo.getWriteConcern();
@@ -514,14 +540,14 @@ describe('Mongo', () => {
         expect(res).to.equal(expectedResult);
       });
 
-      it('returns undefined if not set', () => {
+      it('returns undefined if not set', function () {
         serviceProvider.getWriteConcern.returns(undefined);
         const res = mongo.getWriteConcern();
         expect(serviceProvider.getWriteConcern).to.have.been.calledWith();
         expect(res).to.equal(undefined);
       });
 
-      it('throws InternalError if getWriteConcern errors', () => {
+      it('throws InternalError if getWriteConcern errors', function () {
         const expectedError = new Error();
         serviceProvider.getWriteConcern.throws(expectedError);
         try {
@@ -532,21 +558,23 @@ describe('Mongo', () => {
         expect.fail();
       });
     });
-    describe('setReadPref', () => {
-      it('calls serviceProvider.restConnectionOptions', async() => {
+    describe('setReadPref', function () {
+      it('calls serviceProvider.restConnectionOptions', async function () {
         serviceProvider.resetConnectionOptions.resolves();
-        serviceProvider.readPreferenceFromOptions.callsFake(input => input as any);
+        serviceProvider.readPreferenceFromOptions.callsFake(
+          (input) => input as any
+        );
         await mongo.setReadPref('primaryPreferred', []);
         expect(serviceProvider.resetConnectionOptions).to.have.been.calledWith({
           readPreference: {
             readPreference: 'primaryPreferred',
             readPreferenceTags: [],
-            hedge: undefined
-          }
+            hedge: undefined,
+          },
         });
       });
 
-      it('throws if resetConnectionOptions errors', async() => {
+      it('throws if resetConnectionOptions errors', async function () {
         const expectedError = new Error();
         serviceProvider.resetConnectionOptions.throws(expectedError);
         try {
@@ -557,18 +585,18 @@ describe('Mongo', () => {
         expect.fail();
       });
     });
-    describe('setReadConcern', () => {
-      it('calls serviceProvider.resetConnectionOptions', async() => {
+    describe('setReadConcern', function () {
+      it('calls serviceProvider.resetConnectionOptions', async function () {
         serviceProvider.resetConnectionOptions.resolves();
         await mongo.setReadConcern('majority');
         expect(serviceProvider.resetConnectionOptions).to.have.been.calledWith({
           readConcern: {
-            level: 'majority'
-          }
+            level: 'majority',
+          },
         });
       });
 
-      it('throws if resetConnectionOptions errors', async() => {
+      it('throws if resetConnectionOptions errors', async function () {
         const expectedError = new Error();
         serviceProvider.resetConnectionOptions.throws(expectedError);
         try {
@@ -579,22 +607,35 @@ describe('Mongo', () => {
         expect.fail();
       });
     });
-    describe('setWriteConcern', () => {
+    describe('setWriteConcern', function () {
       [
         { args: ['majority'], opts: { w: 'majority' } },
         { args: ['majority', 200], opts: { w: 'majority', wtimeoutMS: 200 } },
-        { args: ['majority', 200, false], opts: { w: 'majority', wtimeoutMS: 200, journal: false } },
-        { args: ['majority', undefined, false], opts: { w: 'majority', journal: false } },
-        { args: [{ w: 'majority', wtimeout: 200, fsync: 1 }], opts: { w: 'majority', wtimeoutMS: 200, journal: true } }
+        {
+          args: ['majority', 200, false],
+          opts: { w: 'majority', wtimeoutMS: 200, journal: false },
+        },
+        {
+          args: ['majority', undefined, false],
+          opts: { w: 'majority', journal: false },
+        },
+        {
+          args: [{ w: 'majority', wtimeout: 200, fsync: 1 }],
+          opts: { w: 'majority', wtimeoutMS: 200, journal: true },
+        },
       ].forEach(({ args, opts }) => {
-        it(`calls serviceProvider.resetConnectionOptions for args ${JSON.stringify(args)}`, async() => {
+        it(`calls serviceProvider.resetConnectionOptions for args ${JSON.stringify(
+          args
+        )}`, async function () {
           serviceProvider.resetConnectionOptions.resolves();
           await mongo.setWriteConcern.call(mongo, ...args); // tricking TS into thinking the arguments are correct
-          expect(serviceProvider.resetConnectionOptions).to.have.been.calledWith(opts);
+          expect(
+            serviceProvider.resetConnectionOptions
+          ).to.have.been.calledWith(opts);
         });
       });
 
-      it('throws if resetConnectionOptions errors', async() => {
+      it('throws if resetConnectionOptions errors', async function () {
         const expectedError = new Error();
         serviceProvider.resetConnectionOptions.throws(expectedError);
         try {
@@ -605,20 +646,22 @@ describe('Mongo', () => {
         expect.fail();
       });
     });
-    describe('startSession', () => {
-      beforeEach(() => {
+    describe('startSession', function () {
+      beforeEach(function () {
         serviceProvider.startSession.returns(driverSession as any);
       });
-      it('calls serviceProvider.startSession', () => {
+      it('calls serviceProvider.startSession', function () {
         const opts = { causalConsistency: false };
         const s = mongo.startSession(opts);
         const driverOpts = { ...opts };
-        expect(serviceProvider.startSession).to.have.been.calledWith(driverOpts);
+        expect(serviceProvider.startSession).to.have.been.calledWith(
+          driverOpts
+        );
         expect(s._session).to.deep.equal(driverSession);
         expect(s._options).to.deep.equal(driverOpts);
       });
 
-      it('throws if startSession errors', () => {
+      it('throws if startSession errors', function () {
         const expectedError = new Error();
         serviceProvider.startSession.throws(expectedError);
         try {
@@ -629,68 +672,68 @@ describe('Mongo', () => {
         expect.fail();
       });
 
-      it('calls startSession without args', () => {
+      it('calls startSession without args', function () {
         const result = mongo.startSession();
         expect(serviceProvider.startSession).to.have.been.calledOnceWith({});
         expect(result._session).to.equal(driverSession);
       });
-      it('can set default transaction options readconcern', () => {
+      it('can set default transaction options readconcern', function () {
         const result = mongo.startSession({
-          readConcern: sampleOpts.readConcern
+          readConcern: sampleOpts.readConcern,
         });
         expect(serviceProvider.startSession).to.have.been.calledOnceWith({
           defaultTransactionOptions: {
-            readConcern: sampleOpts.readConcern
-          }
+            readConcern: sampleOpts.readConcern,
+          },
         });
         expect(result._session).to.equal(driverSession);
       });
-      it('can set default transaction options writeConcern', () => {
+      it('can set default transaction options writeConcern', function () {
         const result = mongo.startSession({
-          writeConcern: sampleOpts.writeConcern
+          writeConcern: sampleOpts.writeConcern,
         });
         expect(serviceProvider.startSession).to.have.been.calledOnceWith({
           defaultTransactionOptions: {
-            writeConcern: sampleOpts.writeConcern
-          }
+            writeConcern: sampleOpts.writeConcern,
+          },
         });
         expect(result._session).to.equal(driverSession);
       });
-      it('can set default transaction options readPreference', () => {
+      it('can set default transaction options readPreference', function () {
         const result = mongo.startSession({
-          readPreference: sampleOpts.readPreference as any
+          readPreference: sampleOpts.readPreference as any,
         });
         expect(serviceProvider.startSession).to.have.been.calledOnceWith({
           defaultTransactionOptions: {
-            readPreference: sampleOpts.readPreference
-          }
+            readPreference: sampleOpts.readPreference,
+          },
         });
         expect(result._session).to.equal(driverSession);
       });
-      it('can set causalConsistency', () => {
+      it('can set causalConsistency', function () {
         const result = mongo.startSession({
-          causalConsistency: false
+          causalConsistency: false,
         });
         expect(serviceProvider.startSession).to.have.been.calledOnceWith({
-          causalConsistency: false
+          causalConsistency: false,
         });
         expect(result._session).to.equal(driverSession);
       });
-      it('sets everything', () => {
+      it('sets everything', function () {
         const result = mongo.startSession(sampleOpts as any);
         expect(serviceProvider.startSession).to.have.been.calledOnceWith({
           causalConsistency: sampleOpts.causalConsistency,
           defaultTransactionOptions: {
             readPreference: sampleOpts.readPreference,
             readConcern: sampleOpts.readConcern,
-            writeConcern: sampleOpts.writeConcern
-          }
+            writeConcern: sampleOpts.writeConcern,
+          },
         });
         expect(result._session).to.equal(driverSession);
       });
     });
-    describe('setCausalConsistency', () => {
-      it('throws because it is unsupported by the driver', () => {
+    describe('setCausalConsistency', function () {
+      it('throws because it is unsupported by the driver', function () {
         try {
           mongo.setCausalConsistency();
           expect.fail('expected error');
@@ -701,8 +744,8 @@ describe('Mongo', () => {
         }
       });
     });
-    describe('isCausalConsistency', () => {
-      it('throws because it is unsupported by the driver', () => {
+    describe('isCausalConsistency', function () {
+      it('throws because it is unsupported by the driver', function () {
         try {
           mongo.isCausalConsistency();
           expect.fail('expected error');
@@ -713,34 +756,40 @@ describe('Mongo', () => {
         }
       });
     });
-    describe('use', () => {
-      it('sets the current db', () => {
+    describe('use', function () {
+      it('sets the current db', function () {
         const msg = mongo.use('moo');
         expect(msg).to.equal('switched to db moo');
         expect(instanceState.context.db.getName()).to.equal('moo');
       });
-      it('reports if no db switch has taken place', () => {
+      it('reports if no db switch has taken place', function () {
         mongo.use('moo1');
         const msg = mongo.use('moo1');
         expect(msg).to.equal('already on db moo1');
         expect(instanceState.context.db.getName()).to.equal('moo1');
       });
-      it('reports if db has the same name but different Mongo objects', () => {
-        instanceState.context.db = new Mongo(instanceState, undefined, undefined, undefined, serviceProvider).getDB('moo1');
+      it('reports if db has the same name but different Mongo objects', function () {
+        instanceState.context.db = new Mongo(
+          instanceState,
+          undefined,
+          undefined,
+          undefined,
+          serviceProvider
+        ).getDB('moo1');
         expect(instanceState.context.db.getName()).to.equal('moo1');
         const msg = mongo.use('moo1');
         expect(msg).to.equal('switched to db moo1');
         expect(instanceState.context.db.getName()).to.equal('moo1');
       });
-      it('works if previously there was no db', () => {
+      it('works if previously there was no db', function () {
         instanceState.context.db = new NoDatabase();
         const msg = mongo.use('moo1');
         expect(msg).to.equal('switched to db moo1');
         expect(instanceState.context.db.getName()).to.equal('moo1');
       });
     });
-    describe('deprecated mongo methods', () => {
-      it('setSlaveOk', () => {
+    describe('deprecated mongo methods', function () {
+      it('setSlaveOk', function () {
         try {
           mongo.setSlaveOk();
         } catch (e: any) {
@@ -748,73 +797,81 @@ describe('Mongo', () => {
         }
         expect.fail();
       });
-      it('setSecondaryOk (starts as primary)', async() => {
+      it('setSecondaryOk (starts as primary)', async function () {
         const printCalls = [];
         instanceState.setEvaluationListener({
           onPrint(...args: any[]) {
             printCalls.push(args);
-          }
+          },
         });
         serviceProvider.getReadPreference.returns({ mode: 'primary' } as any);
         serviceProvider.resetConnectionOptions.resolves();
         await mongo.setSecondaryOk();
-        expect((mongo as any)._readPreferenceWasExplicitlyRequested).to.equal(true);
-        expect(printCalls.map(call => call[0][0].printable))
-          .to.deep.equal([
-            'DeprecationWarning: .setSecondaryOk() is deprecated. Use .setReadPref("primaryPreferred") instead',
-            'Setting read preference from "primary" to "primaryPreferred"'
-          ]);
+        expect((mongo as any)._readPreferenceWasExplicitlyRequested).to.equal(
+          true
+        );
+        expect(printCalls.map((call) => call[0][0].printable)).to.deep.equal([
+          'DeprecationWarning: .setSecondaryOk() is deprecated. Use .setReadPref("primaryPreferred") instead',
+          'Setting read preference from "primary" to "primaryPreferred"',
+        ]);
       });
-      it('setSecondaryOk (starts as secondary)', async() => {
+      it('setSecondaryOk (starts as secondary)', async function () {
         const printCalls = [];
         instanceState.setEvaluationListener({
           onPrint(...args: any[]) {
             printCalls.push(args);
-          }
+          },
         });
         serviceProvider.getReadPreference.returns({ mode: 'secondary' } as any);
         serviceProvider.resetConnectionOptions.resolves();
         await mongo.setSecondaryOk();
-        expect((mongo as any)._readPreferenceWasExplicitlyRequested).to.equal(false);
-        expect(printCalls.map(call => call[0][0].printable))
-          .to.deep.equal([
-            'DeprecationWarning: .setSecondaryOk() is deprecated. Use .setReadPref("primaryPreferred") instead',
-            'Leaving read preference unchanged (is already "secondary")'
-          ]);
+        expect((mongo as any)._readPreferenceWasExplicitlyRequested).to.equal(
+          false
+        );
+        expect(printCalls.map((call) => call[0][0].printable)).to.deep.equal([
+          'DeprecationWarning: .setSecondaryOk() is deprecated. Use .setReadPref("primaryPreferred") instead',
+          'Leaving read preference unchanged (is already "secondary")',
+        ]);
       });
     });
-    describe('watch', () => {
+    describe('watch', function () {
       let fakeSpCursor: any;
-      beforeEach(() => {
+      beforeEach(function () {
         fakeSpCursor = {
           closed: false,
-          tryNext: async() => {}
+          tryNext: async () => {},
         };
         serviceProvider.watch.returns(fakeSpCursor);
       });
-      it('calls serviceProvider.watch when given no args', async() => {
+      it('calls serviceProvider.watch when given no args', async function () {
         await mongo.watch();
         expect(serviceProvider.watch).to.have.been.calledWith([], {});
       });
-      it('calls serviceProvider.watch when given pipeline arg', async() => {
+      it('calls serviceProvider.watch when given pipeline arg', async function () {
         const pipeline = [{ $match: { operationType: 'insertOne' } }];
         await mongo.watch(pipeline);
         expect(serviceProvider.watch).to.have.been.calledWith(pipeline, {});
       });
-      it('calls serviceProvider.watch when given no args', async() => {
+      it('calls serviceProvider.watch when given no args', async function () {
         const pipeline = [{ $match: { operationType: 'insertOne' } }];
         const ops = { batchSize: 1 };
         await mongo.watch(pipeline, ops);
         expect(serviceProvider.watch).to.have.been.calledWith(pipeline, ops);
       });
 
-      it('returns whatever serviceProvider.watch returns', async() => {
+      it('returns whatever serviceProvider.watch returns', async function () {
         const result = await mongo.watch();
-        expect(result).to.deep.equal(new ChangeStreamCursor(fakeSpCursor, 'mongodb://localhost/?directConnection=true&serverSelectionTimeoutMS=2000', mongo));
+        expect(result).to.deep.equal(
+          new ChangeStreamCursor(
+            fakeSpCursor,
+            'mongodb://localhost/?directConnection=true&serverSelectionTimeoutMS=2000',
+            mongo
+          )
+        );
         expect(mongo._instanceState.currentCursor).to.equal(result);
       });
 
-      it('throws if serviceProvider.watch throws', async() => {
+      it('throws if serviceProvider.watch throws', async function () {
         const expectedError = new Error();
         serviceProvider.watch.throws(expectedError);
         try {
@@ -826,8 +883,8 @@ describe('Mongo', () => {
         expect.fail('Failed to throw');
       });
     });
-    describe('getClientEncryption()', () => {
-      it('throws an error if no FLE options were provided', () => {
+    describe('getClientEncryption()', function () {
+      it('throws an error if no FLE options were provided', function () {
         try {
           mongo.getClientEncryption();
         } catch (e: any) {
@@ -837,34 +894,34 @@ describe('Mongo', () => {
         expect.fail('Failed to throw');
       });
     });
-    describe('getCollection', () => {
-      it('returns a collection for the database', () => {
+    describe('getCollection', function () {
+      it('returns a collection for the database', function () {
         const coll = mongo.getCollection('db1.coll');
         expect(coll).to.be.instanceOf(Collection);
         expect(coll._name).to.equal('coll');
         expect(coll._database._name).to.equal('db1');
       });
 
-      it('returns a collection for the database with multiple .', () => {
+      it('returns a collection for the database with multiple .', function () {
         const coll = mongo.getCollection('db1.coll.subcoll');
         expect(coll).to.be.instanceOf(Collection);
         expect(coll._name).to.equal('coll.subcoll');
         expect(coll._database._name).to.equal('db1');
       });
 
-      it('throws if name is not a valid connection string', () => {
+      it('throws if name is not a valid connection string', function () {
         expect(() => {
           mongo.getCollection('db');
         }).to.throw('Collection must be of the format <db>.<collection>');
       });
 
-      it('throws if name is empty', () => {
+      it('throws if name is empty', function () {
         expect(() => {
           mongo.getCollection('');
         }).to.throw('Collection must be of the format <db>.<collection>');
       });
 
-      it('throws if name starts with dot', () => {
+      it('throws if name starts with dot', function () {
         expect(() => {
           mongo.getCollection('.coll');
         }).to.throw('Collection must be of the format <db>.<collection>');
@@ -872,33 +929,39 @@ describe('Mongo', () => {
     });
   });
 
-  describe('integration', () => {
+  describe('integration', function () {
     const testServer = startTestServer('shared');
     let serviceProvider;
     let instanceState: ShellInstanceState;
     let uri: string;
 
-    beforeEach(async() => {
+    beforeEach(async function () {
       uri = await testServer.connectionString();
-      serviceProvider = await CliServiceProvider.connect(uri, dummyOptions, {}, new EventEmitter());
+      serviceProvider = await CliServiceProvider.connect(
+        uri,
+        dummyOptions,
+        {},
+        new EventEmitter()
+      );
       instanceState = new ShellInstanceState(serviceProvider);
     });
 
-    afterEach(async() => {
+    afterEach(async function () {
       await instanceState.close(true);
     });
 
-    describe('versioned API', () => {
-      context('pre-4.4', () => {
+    describe('versioned API', function () {
+      context('pre-4.4', function () {
         skipIfServerVersion(testServer, '> 4.4');
 
-        it('errors if an API version is specified', async() => {
+        it('errors if an API version is specified', async function () {
           try {
-            // eslint-disable-next-line new-cap
             const mongo = await instanceState.shellApi.Mongo(uri, null, {
-              api: { version: '1' }
+              api: { version: '1' },
             });
-            await (await mongo.getDB('test').getCollection('coll').find()).toArray();
+            await (
+              await mongo.getDB('test').getCollection('coll').find()
+            ).toArray();
             expect.fail('missed exception');
           } catch (err: any) {
             expect(err.name).to.match(/MongoServer(Selection)?Error/);
@@ -906,17 +969,20 @@ describe('Mongo', () => {
         });
       });
 
-      context('post-4.4', () => {
+      context('post-4.4', function () {
         skipIfServerVersion(testServer, '<= 4.4');
 
-        it('can specify an API version', async() => {
-          // eslint-disable-next-line new-cap
+        it('can specify an API version', async function () {
           const mongo = await instanceState.shellApi.Mongo(uri, null, {
-            api: { version: '1' }
+            api: { version: '1' },
           });
-          expect(mongo._connectionInfo.driverOptions).to.deep.equal({ serverApi: { version: '1' } });
+          expect(mongo._connectionInfo.driverOptions).to.deep.equal({
+            serverApi: { version: '1' },
+          });
           // Does not throw, unlike the 4.4 test case above:
-          await (await mongo.getDB('test').getCollection('coll').find()).toArray();
+          await (
+            await mongo.getDB('test').getCollection('coll').find()
+          ).toArray();
         });
       });
     });

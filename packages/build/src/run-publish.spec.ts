@@ -2,8 +2,11 @@ import chai, { expect } from 'chai';
 import sinon from 'ts-sinon';
 import type { writeBuildInfo as writeBuildInfoType } from './build-info';
 import { Barque } from './barque';
-import { Config, shouldDoPublicRelease as shouldDoPublicReleaseFn } from './config';
-import { createAndPublishDownloadCenterConfig as createAndPublishDownloadCenterConfigFn } from './download-center';
+import type {
+  Config,
+  shouldDoPublicRelease as shouldDoPublicReleaseFn,
+} from './config';
+import type { createAndPublishDownloadCenterConfig as createAndPublishDownloadCenterConfigFn } from './download-center';
 import { GithubRepo } from '@mongodb-js/devtools-github-repo';
 import type { publishToHomebrew as publishToHomebrewType } from './homebrew';
 import type { publishNpmPackages as publishNpmPackagesType } from './npm-packages';
@@ -13,14 +16,17 @@ import { dummyConfig } from '../test/helpers';
 chai.use(require('sinon-chai'));
 
 function createStubRepo(overrides?: any): GithubRepo {
-  return sinon.createStubInstance(GithubRepo, overrides) as unknown as GithubRepo;
+  return sinon.createStubInstance(
+    GithubRepo,
+    overrides
+  ) as unknown as GithubRepo;
 }
 
 function createStubBarque(overrides?: any): Barque {
   return sinon.createStubInstance(Barque, overrides) as unknown as Barque;
 }
 
-describe('publish', () => {
+describe('publish', function () {
   let config: Config;
   let createAndPublishDownloadCenterConfig: typeof createAndPublishDownloadCenterConfigFn;
   let publishNpmPackages: typeof publishNpmPackagesType;
@@ -32,7 +38,7 @@ describe('publish', () => {
   let homebrewCoreRepo: GithubRepo;
   let barque: Barque;
 
-  beforeEach(() => {
+  beforeEach(function () {
     config = { ...dummyConfig };
 
     createAndPublishDownloadCenterConfig = sinon.spy();
@@ -45,29 +51,31 @@ describe('publish', () => {
     homebrewCoreRepo = createStubRepo();
     barque = createStubBarque({
       releaseToBarque: sinon.stub().resolves(['package-url']),
-      waitUntilPackagesAreAvailable: sinon.stub().resolves()
+      waitUntilPackagesAreAvailable: sinon.stub().resolves(),
     });
   });
 
-  context('if is a public release', () => {
-    beforeEach(() => {
+  context('if is a public release', function () {
+    beforeEach(function () {
       config.triggeringGitTag = 'v0.7.0';
       shouldDoPublicRelease = sinon.stub().returns(true);
       githubRepo = createStubRepo({
-        getMostRecentDraftTagForRelease: sinon.stub().resolves({ name: 'v0.7.0-draft.42', sha: 'revision' })
+        getMostRecentDraftTagForRelease: sinon
+          .stub()
+          .resolves({ name: 'v0.7.0-draft.42', sha: 'revision' }),
       });
       Object.assign(githubRepo, {
         repo: {
           owner: 'mongodb-js',
-          repo: 'mongosh'
-        }
+          repo: 'mongosh',
+        },
       });
     });
 
-    context('validates configuration', () => {
-      it('fails if no draft tag is found', async() => {
+    context('validates configuration', function () {
+      it('fails if no draft tag is found', async function () {
         githubRepo = createStubRepo({
-          getMostRecentDraftTagForRelease: sinon.stub().resolves(undefined)
+          getMostRecentDraftTagForRelease: sinon.stub().resolves(undefined),
         });
         try {
           await runPublish(
@@ -88,9 +96,11 @@ describe('publish', () => {
         expect.fail('Expected error');
       });
 
-      it('fails if draft tag SHA does not match revision', async() => {
+      it('fails if draft tag SHA does not match revision', async function () {
         githubRepo = createStubRepo({
-          getMostRecentDraftTagForRelease: sinon.stub().resolves({ name: 'v0.7.0-draft.42', sha: 'wrong' })
+          getMostRecentDraftTagForRelease: sinon
+            .stub()
+            .resolves({ name: 'v0.7.0-draft.42', sha: 'wrong' }),
         });
         try {
           await runPublish(
@@ -112,7 +122,7 @@ describe('publish', () => {
       });
     });
 
-    it('publishes artifacts to barque', async() => {
+    it('publishes artifacts to barque', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -142,7 +152,7 @@ describe('publish', () => {
       expect(barque.waitUntilPackagesAreAvailable).to.have.been.called;
     });
 
-    it('updates the download center config', async() => {
+    it('updates the download center config', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -163,7 +173,7 @@ describe('publish', () => {
       );
     });
 
-    it('promotes the release in github', async() => {
+    it('promotes the release in github', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -180,7 +190,7 @@ describe('publish', () => {
       expect(githubRepo.promoteRelease).to.have.been.calledWith(config);
     });
 
-    it('writes analytics config and then publishes NPM packages', async() => {
+    it('writes analytics config and then publishes NPM packages', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -196,9 +206,11 @@ describe('publish', () => {
 
       expect(writeBuildInfo).to.have.been.calledOnceWith(config);
       expect(publishNpmPackages).to.have.been.calledWith();
-      expect(publishNpmPackages).to.have.been.calledAfter(writeBuildInfo as any);
+      expect(publishNpmPackages).to.have.been.calledAfter(
+        writeBuildInfo as any
+      );
     });
-    it('publishes to homebrew', async() => {
+    it('publishes to homebrew', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -217,16 +229,18 @@ describe('publish', () => {
         mongoHomebrewCoreForkRepo,
         config.version
       );
-      expect(publishToHomebrew).to.have.been.calledAfter(githubRepo.promoteRelease as any);
+      expect(publishToHomebrew).to.have.been.calledAfter(
+        githubRepo.promoteRelease as any
+      );
     });
   });
 
-  context('if is not a public release', () => {
-    beforeEach(() => {
+  context('if is not a public release', function () {
+    beforeEach(function () {
       shouldDoPublicRelease = sinon.stub().returns(false);
     });
 
-    it('does not update the download center config', async() => {
+    it('does not update the download center config', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -243,7 +257,7 @@ describe('publish', () => {
       expect(createAndPublishDownloadCenterConfig).not.to.have.been.called;
     });
 
-    it('does not promote the release in github', async() => {
+    it('does not promote the release in github', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -260,7 +274,7 @@ describe('publish', () => {
       expect(githubRepo.promoteRelease).not.to.have.been.called;
     });
 
-    it('does not publish npm packages', async() => {
+    it('does not publish npm packages', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -277,7 +291,7 @@ describe('publish', () => {
       expect(publishNpmPackages).not.to.have.been.called;
     });
 
-    it('does not publish to homebrew', async() => {
+    it('does not publish to homebrew', async function () {
       await runPublish(
         config,
         githubRepo,
@@ -294,7 +308,7 @@ describe('publish', () => {
       expect(publishToHomebrew).not.to.have.been.called;
     });
 
-    it('does not release to barque', async() => {
+    it('does not release to barque', async function () {
       await runPublish(
         config,
         githubRepo,

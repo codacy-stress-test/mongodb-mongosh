@@ -1,5 +1,5 @@
 import semver from 'semver';
-import { Config } from './config';
+import type { Config } from './config';
 
 /**
  * Checks if current build needs to be released to github and the download
@@ -24,8 +24,10 @@ export function shouldDoPublicRelease(config: Config): boolean {
 
   if (semver.neq(config.triggeringGitTag, config.version) && !config.isDryRun) {
     console.info(
-      'mongosh: skip public release: the commit tag', config.triggeringGitTag,
-      'is different from the release version', config.version
+      'mongosh: skip public release: the commit tag',
+      config.triggeringGitTag,
+      'is different from the release version',
+      config.version
     );
 
     return false;

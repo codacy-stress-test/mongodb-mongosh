@@ -4,13 +4,13 @@ import {
   serverVersions,
   shellApiClassDefault,
   deprecated,
-  ShellApiWithMongoClass
+  ShellApiWithMongoClass,
 } from './decorators';
-import { Document } from '@mongosh/service-provider-core';
-import Collection from './collection';
+import type { Document } from '@mongosh/service-provider-core';
+import type Collection from './collection';
 import { asPrintable, ServerVersions } from './enums';
 import { MongoshDeprecatedError } from '@mongosh/errors';
-import Mongo from './mongo';
+import type Mongo from './mongo';
 
 @shellApiClassDefault
 export default class PlanCache extends ShellApiWithMongoClass {
@@ -40,7 +40,11 @@ export default class PlanCache extends ShellApiWithMongoClass {
 
   @returnsPromise
   @apiVersions([])
-  async clearPlansByQuery(query: Document, projection?: Document, sort?: Document): Promise<Document> {
+  async clearPlansByQuery(
+    query: Document,
+    projection?: Document,
+    sort?: Document
+  ): Promise<Document> {
     const cmd = { query } as any;
     if (projection) {
       cmd.projection = projection;
@@ -56,17 +60,24 @@ export default class PlanCache extends ShellApiWithMongoClass {
   @apiVersions([])
   async list(pipeline?: Document[]): Promise<Document[]> {
     const p = pipeline || [];
-    const agg = await this._collection.aggregate([{ $planCacheStats: {} }, ...p]);
+    const agg = await this._collection.aggregate([
+      { $planCacheStats: {} },
+      ...p,
+    ]);
     return await agg.toArray();
   }
 
   @deprecated
   listQueryShapes(): never {
-    throw new MongoshDeprecatedError('PlanCache.listQueryShapes was deprecated, please use PlanCache.list instead');
+    throw new MongoshDeprecatedError(
+      'PlanCache.listQueryShapes was deprecated, please use PlanCache.list instead'
+    );
   }
 
   @deprecated
   getPlansByQuery(): never {
-    throw new MongoshDeprecatedError('PlanCache.getPlansByQuery was deprecated, please use PlanCache.list instead');
+    throw new MongoshDeprecatedError(
+      'PlanCache.getPlansByQuery was deprecated, please use PlanCache.list instead'
+    );
   }
 }

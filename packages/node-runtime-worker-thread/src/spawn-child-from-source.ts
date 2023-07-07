@@ -1,11 +1,11 @@
-import {
+import type {
   ChildProcess,
   Serializable,
-  spawn,
   SpawnOptions,
   StdioNull,
-  StdioPipe
+  StdioPipe,
 } from 'child_process';
+import { spawn } from 'child_process';
 import { once } from 'events';
 
 export async function kill(
@@ -25,12 +25,12 @@ export default function spawnChildFromSource(
   _stdout: StdioNull | StdioPipe = 'inherit',
   _stderr: StdioNull | StdioPipe = 'inherit'
 ): Promise<ChildProcess> {
-  return new Promise(async(resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const readyToken = Date.now().toString(32);
 
     const childProcess = spawn(process.execPath, {
       stdio: ['pipe', _stdout, _stderr, 'ipc'],
-      ...spawnOptions
+      ...spawnOptions,
     });
 
     if (!childProcess.stdin) {

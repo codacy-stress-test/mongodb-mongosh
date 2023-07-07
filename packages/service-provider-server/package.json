@@ -16,8 +16,12 @@
     "test": "cross-env TS_NODE_PROJECT=../../config/tsconfig.test.json mocha -r \"../../scripts/import-expansions.js\" --timeout 60000 -r ts-node/register \"./src/**/*.spec.ts\"",
     "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
     "prepublish": "npm run compile",
-    "lint": "eslint --report-unused-disable-directives \"./{src,test}/**/*.{js,ts,tsx}\"",
-    "check": "npm run lint && depcheck --skip-missing=true --ignores aws4"
+    "eslint": "eslint",
+    "lint": "npm run eslint && npm run prettier -- --check .",
+    "check": "npm run lint && npm run depcheck",
+    "depcheck": "depcheck",
+    "prettier": "prettier",
+    "reformat": "npm run prettier -- --write . && npm run eslint --fix"
   },
   "license": "Apache-2.0",
   "publishConfig": {
@@ -39,8 +43,16 @@
   },
   "mongosh": {
     "ciRequiredOptionalDependencies": {
-      "mongodb-client-encryption": ["darwin", "linux", "win32"],
-      "kerberos": ["darwin", "linux", "win32"]
+      "mongodb-client-encryption": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "kerberos": [
+        "darwin",
+        "linux",
+        "win32"
+      ]
     }
   },
   "dependencies": {
@@ -55,7 +67,15 @@
     "saslprep": "mongodb-js/saslprep#v1.0.4"
   },
   "optionalDependencies": {
+    "kerberos": "^2.0.0",
+    "mongodb-client-encryption": "^2.8.0"
+  },
+  "devDependencies": {
+    "@mongodb-js/prettier-config-devtools": "^1.0.1",
+    "depcheck": "^1.4.3",
+    "eslint": "^7.25.0",
+    "kerberos": "^2.0.0",
     "mongodb-client-encryption": "^2.8.0",
-    "kerberos": "^2.0.0"
+    "prettier": "^2.8.8"
   }
 }

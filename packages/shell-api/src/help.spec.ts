@@ -3,23 +3,25 @@ import Help from './help';
 import { toShellResult } from './index';
 import { expect } from 'chai';
 
-describe('Help', () => {
+describe('Help', function () {
   let translate;
 
-  beforeEach(() => {
+  beforeEach(function () {
     translate = sinon.fake((x) => `translated: ${x}`);
   });
 
-  describe('#toShellResult', () => {
-    it('returns Help', async() => {
-      expect((await toShellResult(new Help({ help: 'help' }, { translate }))).type).to.equal('Help');
+  describe('#toShellResult', function () {
+    it('returns Help', async function () {
+      expect(
+        (await toShellResult(new Help({ help: 'help' }, { translate }))).type
+      ).to.equal('Help');
     });
   });
 
-  describe('#toShellResult', () => {
-    it('returns the Help a plain object', async() => {
+  describe('#toShellResult', function () {
+    it('returns the Help a plain object', async function () {
       const properties = {
-        help: 'help'
+        help: 'help',
       };
 
       const help = new Help(properties, { translate });
@@ -28,34 +30,32 @@ describe('Help', () => {
       expect(result.printable).to.not.equal(help);
     });
 
-    it('returns translated help', async() => {
+    it('returns translated help', async function () {
       const properties = {
-        help: 'help'
+        help: 'help',
       };
 
       expect(
-        (await toShellResult(new Help(properties, { translate })))
-          .printable
+        (await toShellResult(new Help(properties, { translate }))).printable
           .help
       ).to.equal('translated: help');
     });
 
-    it('returns docs', async() => {
+    it('returns docs', async function () {
       const properties = {
         help: 'help',
-        docs: 'https://example.com'
+        docs: 'https://example.com',
       };
 
       expect(
-        (await toShellResult(new Help(properties, { translate })))
-          .printable
+        (await toShellResult(new Help(properties, { translate }))).printable
           .docs
       ).to.equal('translated: https://example.com');
     });
 
-    it('returns default attr', async() => {
+    it('returns default attr', async function () {
       const properties = {
-        help: 'help'
+        help: 'help',
       };
 
       const help = new Help(properties, { translate });
@@ -63,17 +63,18 @@ describe('Help', () => {
       expect((await toShellResult(help)).printable.attr).to.deep.equal([]);
     });
 
-    it('returns attr with translated description', async() => {
+    it('returns attr with translated description', async function () {
       const properties = {
         help: 'help',
-        attr: [{ name: 'key', description: 'description' }]
+        attr: [{ name: 'key', description: 'description' }],
       };
 
       expect(
-        (await toShellResult(new Help(properties, { translate })))
-          .printable
+        (await toShellResult(new Help(properties, { translate }))).printable
           .attr
-      ).to.deep.equal([{ name: 'key', description: 'translated: description' }]);
+      ).to.deep.equal([
+        { name: 'key', description: 'translated: description' },
+      ]);
     });
   });
 });

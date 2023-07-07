@@ -18,7 +18,6 @@ type AnalyticsIdentifyMessage = MongoshAnalyticsIdentity & {
 type AnalyticsTrackMessage = MongoshAnalyticsIdentity & {
   event: string;
   properties: {
-    // eslint-disable-next-line camelcase
     mongosh_version: string;
     [key: string]: any;
   };
@@ -80,8 +79,8 @@ class Queue<T> {
  * (e.g. because we are running without an API key).
  */
 export class NoopAnalytics implements MongoshAnalytics {
-  identify(_info: any): void {} // eslint-disable-line @typescript-eslint/no-unused-vars
-  track(_info: any): void {} // eslint-disable-line @typescript-eslint/no-unused-vars
+  identify(_info: any): void {}
+  track(_info: any): void {}
   flush(cb: () => void) {
     cb();
   }
@@ -145,8 +144,10 @@ export class ToggleableAnalytics implements MongoshAnalytics {
     // stack trace information for where the buggy call came from, and two,
     // this way the validation affects all tests in CI, not just the ones that
     // are explicitly written to enable telemetry to a fake endpoint.
-    if (!('userId' in firstArg && firstArg.userId) &&
-        !('anonymousId' in firstArg && firstArg.anonymousId)) {
+    if (
+      !('userId' in firstArg && firstArg.userId) &&
+      !('anonymousId' in firstArg && firstArg.anonymousId)
+    ) {
       const err = new Error('Telemetry setup is missing userId or anonymousId');
       switch (this._queue.getState()) {
         case 'enabled':
@@ -188,7 +189,7 @@ async function lockfile(
 ): Promise<() => Promise<void>> {
   let intervalId: ReturnType<typeof setInterval>;
   const lockfilePath = `${filepath}.lock`;
-  const unlock = async() => {
+  const unlock = async () => {
     clearInterval(intervalId);
     try {
       return await fs.promises.rmdir(lockfilePath);
@@ -205,7 +206,6 @@ async function lockfile(
       const now = Date.now();
       fs.promises.utimes(lockfilePath, now, now).catch(() => {});
     }, staleDuration / 2);
-    // eslint-disable-next-line chai-friendly/no-unused-expressions
     intervalId.unref?.();
     return unlock;
   } catch (e) {
@@ -255,7 +255,7 @@ export class ThrottledAnalytics implements MongoshAnalytics {
 
     const {
       throttleOptions: { metadataPath },
-      currentUserId: userId
+      currentUserId: userId,
     } = this;
 
     return path.resolve(metadataPath, `am-${userId}.json`);
@@ -354,7 +354,7 @@ export class ThrottledAnalytics implements MongoshAnalytics {
       return;
     }
 
-    this.restorePromise.finally(async() => {
+    this.restorePromise.finally(async () => {
       try {
         await fs.promises.writeFile(
           this.metadataPath,

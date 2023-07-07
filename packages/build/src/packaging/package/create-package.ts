@@ -1,9 +1,11 @@
 import path from 'path';
-import { PackageVariant, getDistro, getArch } from '../../config';
+import type { PackageVariant } from '../../config';
+import { getDistro, getArch } from '../../config';
 import { createDebianPackage as createDebianPackageFn } from './debian';
-import { getPackageFile, PackageFile } from './get-package-file';
+import type { PackageFile } from './get-package-file';
+import { getPackageFile } from './get-package-file';
 import { createMsiPackage as createMsiPackageFn } from './msi';
-import { PackageInformation } from './package-information';
+import type { PackageInformation } from './package-information';
 import { createRedhatPackage as createRedhatPackageFn } from './redhat';
 import { createTarballPackage as createTarballPackageFn } from './tarball';
 import { createZipPackage as createZipPackageFn } from './zip';
@@ -30,13 +32,28 @@ export async function createPackage(
       await createTarballPackage(packageInformation, fullTarballFilePath);
       break;
     case 'rpm':
-      await createRedhatPackage(packageInformation, packageInformation.rpmTemplateDir, getArch(packageVariant), fullTarballFilePath);
+      await createRedhatPackage(
+        packageInformation,
+        packageInformation.rpmTemplateDir,
+        getArch(packageVariant),
+        fullTarballFilePath
+      );
       break;
     case 'deb':
-      await createDebianPackage(packageInformation, packageInformation.debTemplateDir, getArch(packageVariant), fullTarballFilePath);
+      await createDebianPackage(
+        packageInformation,
+        packageInformation.debTemplateDir,
+        getArch(packageVariant),
+        fullTarballFilePath
+      );
       break;
     case 'win32msi':
-      await createMsiPackage(packageInformation, packageInformation.msiTemplateDir, getArch(packageVariant), fullTarballFilePath);
+      await createMsiPackage(
+        packageInformation,
+        packageInformation.msiTemplateDir,
+        getArch(packageVariant),
+        fullTarballFilePath
+      );
       break;
     case 'darwin':
     case 'win32':
@@ -48,6 +65,6 @@ export async function createPackage(
 
   return {
     ...tarballFile,
-    path: fullTarballFilePath
+    path: fullTarballFilePath,
   };
 }

@@ -1,4 +1,5 @@
-import cliReplCompleter, { AutocompleteParameters } from '@mongosh/autocomplete';
+import type { AutocompleteParameters } from '@mongosh/autocomplete';
+import cliReplCompleter from '@mongosh/autocomplete';
 import type { Autocompleter, Completion } from './autocompleter';
 
 export class ShellApiAutocompleter implements Autocompleter {
@@ -21,7 +22,7 @@ export class ShellApiAutocompleter implements Autocompleter {
 
     const entries = completions[0].map((completion) => {
       return {
-        completion
+        completion,
       };
     });
 
