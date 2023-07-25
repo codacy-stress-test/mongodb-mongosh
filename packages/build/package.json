@@ -18,7 +18,7 @@
     "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 30000 -r ts-node/register \"./src/**/*.spec.ts\"",
     "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
     "eslint": "eslint",
-    "lint": "npm run eslint && npm run prettier -- --check .",
+    "lint": "npm run eslint . && npm run prettier -- --check .",
     "check": "npm run lint && npm run depcheck",
     "depcheck": "depcheck",
     "evergreen-release": "ts-node -r ../../scripts/import-expansions.js src/index.ts",
@@ -33,23 +33,20 @@
   "engines": {
     "node": ">=14.15.1"
   },
-  "dependency-check": {
-    "entries": [
-      "src/**/*.js"
-    ]
-  },
   "mongosh": {
     "unitTestsOnly": true
   },
   "devDependencies": {
+    "@mongodb-js/eslint-config-mongosh": "^1.0.0",
     "@mongodb-js/prettier-config-devtools": "^1.0.1",
+    "@mongodb-js/tsconfig-mongosh": "^1.0.0",
     "@types/command-exists": "^1.2.0",
     "@types/cross-spawn": "^6.0.2",
     "@types/download": "^8.0.1",
     "@types/es-aggregate-error": "^1.0.2",
     "@types/node-fetch": "^2.6.4",
     "@types/rimraf": "^3.0.0",
-    "@types/tar": "^4.0.3",
+    "@types/tar": "^4.0.4",
     "@types/tar-fs": "^2.0.0",
     "@types/tmp": "^0.2.3",
     "cross-spawn": "^7.0.3",
@@ -70,9 +67,9 @@
     "es-aggregate-error": "^1.0.9",
     "mongodb-download-url": "^1.3.0",
     "nock": "^13.0.11",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "pkg-up": "^3.1.0",
-    "rimraf": "^3.0.1",
+    "rimraf": "^3.0.2",
     "semver": "^7.5.3",
     "tar": "^6.1.15",
     "tar-fs": "^2.1.0",
