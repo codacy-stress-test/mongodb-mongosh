@@ -23,7 +23,8 @@ else
       sed -i "$HOME/.npmrc" -e 's/^prefix=.*$//'
     fi
   fi
-  export NVM_DIR="$HOME/.nvm"
+  export NVM_DIR="$BASEDIR/.nvm"
+  mkdir -p "${NVM_DIR}"
 
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
@@ -31,8 +32,11 @@ else
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
+  set +x # nvm is very verbose
+  echo nvm install --no-progress $NODE_JS_VERSION && nvm alias default $NODE_JS_VERSION
   nvm install --no-progress $NODE_JS_VERSION
   nvm alias default $NODE_JS_VERSION
+  set -x
 
   if env PATH="/opt/chefdk/gitbin:$PATH" git --version | grep -q 'git version 1.'; then
     (cd "$BASEDIR" &&

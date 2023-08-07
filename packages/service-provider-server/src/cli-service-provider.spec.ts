@@ -961,25 +961,18 @@ describe('CliServiceProvider', function () {
       expect(info.extraInfo.is_atlas).to.equal(false);
       expect(info.extraInfo.is_localhost).to.equal(true);
       expect(info.extraInfo.fcv).to.equal(undefined);
-      expect(dbStub.command).to.have.callCount(4);
+      expect(dbStub.command).to.have.callCount(3);
     });
 
     context('when connected to a DocumentDB deployment', function () {
       it('correctly gathers info on the fake deployment', async function () {
-        dbStub.command.callsFake(
-          (params) =>
-            new Promise((resolve, reject) => {
-              if (params.getCmdLineOpts) {
-                reject({
-                  ok: 0,
-                  code: 303,
-                  message: 'Feature not supported: getCmdLineOpts',
-                  operationTime: Date.now(),
-                });
-              } else {
-                resolve({ ok: 1 });
-              }
-            })
+        const serviceProvider = new CliServiceProvider(
+          clientStub,
+          bus,
+          dummyOptions,
+          new ConnectionString(
+            'mongodb://elastic-docdb-123456789.eu-central-1.docdb-elastic.amazonaws.com:27017'
+          )
         );
 
         const info = await serviceProvider.getConnectionInfo();
@@ -990,13 +983,14 @@ describe('CliServiceProvider', function () {
 
     context('when connected to a CosmosDB deployment', function () {
       it('correctly gathers info on the fake deployment', async function () {
-        // eslint-disable-next-line @typescript-eslint/require-await
-        dbStub.command.callsFake(async (params) => {
-          if (params.buildInfo) {
-            return { ok: 1, _t: 1 };
-          }
-          return { ok: 1 };
-        });
+        const serviceProvider = new CliServiceProvider(
+          clientStub,
+          bus,
+          dummyOptions,
+          new ConnectionString(
+            'mongodb+srv://compass-vcore.mongocluster.cosmos.azure.com'
+          )
+        );
 
         const info = await serviceProvider.getConnectionInfo();
         expect(info.extraInfo.is_genuine).to.be.false;
@@ -1111,7 +1105,6 @@ describe('CliServiceProvider', function () {
       getSearchIndexesOptions = { allowDiskUse: true };
 
       collectionStub = stubInterface<Collection>();
-      // @ts-expect-error still @internal
       collectionStub.listSearchIndexes.returns(nativeMethodResult);
       serviceProvider = new CliServiceProvider(
         createClientStub(collectionStub),
@@ -1129,7 +1122,6 @@ describe('CliServiceProvider', function () {
           getSearchIndexesOptions
         );
         expect(result).to.deep.equal(descriptions);
-        // @ts-expect-error still @internal
         expect(collectionStub.listSearchIndexes).to.have.been.calledWith(
           null,
           getSearchIndexesOptions
@@ -1146,7 +1138,6 @@ describe('CliServiceProvider', function () {
           getSearchIndexesOptions
         );
         expect(result).to.deep.equal(descriptions);
-        // @ts-expect-error still @internal
         expect(collectionStub.listSearchIndexes).to.have.been.calledWith(
           'my-index',
           getSearchIndexesOptions
@@ -1168,7 +1159,6 @@ describe('CliServiceProvider', function () {
       nativeMethodResult = ['index_1'];
 
       collectionStub = stubInterface<Collection>();
-      // @ts-expect-error still @internal
       collectionStub.createSearchIndexes.resolves(nativeMethodResult);
       serviceProvider = new CliServiceProvider(
         createClientStub(collectionStub),
@@ -1184,7 +1174,6 @@ describe('CliServiceProvider', function () {
         descriptions
       );
       expect(result).to.deep.equal(nativeMethodResult);
-      // @ts-expect-error still @internal
       expect(collectionStub.createSearchIndexes).to.have.been.calledWith(
         descriptions
       );
@@ -1198,7 +1187,6 @@ describe('CliServiceProvider', function () {
       indexName = 'foo';
 
       collectionStub = stubInterface<Collection>();
-      // @ts-expect-error still @internal
       collectionStub.dropSearchIndex.resolves();
       serviceProvider = new CliServiceProvider(
         createClientStub(collectionStub),
@@ -1214,7 +1202,6 @@ describe('CliServiceProvider', function () {
         indexName
       );
       expect(result).to.deep.equal(undefined);
-      // @ts-expect-error still @internal
       expect(collectionStub.dropSearchIndex).to.have.been.calledWith(indexName);
     });
   });
@@ -1229,7 +1216,6 @@ describe('CliServiceProvider', function () {
 
       collectionStub = stubInterface<Collection>();
 
-      // @ts-expect-error still @internal
       collectionStub.updateSearchIndex.resolves();
       serviceProvider = new CliServiceProvider(
         createClientStub(collectionStub),
@@ -1246,7 +1232,6 @@ describe('CliServiceProvider', function () {
         description
       );
       expect(result).to.deep.equal(undefined);
-      // @ts-expect-error still @internal
       expect(collectionStub.updateSearchIndex).to.have.been.calledWith(
         indexName,
         description

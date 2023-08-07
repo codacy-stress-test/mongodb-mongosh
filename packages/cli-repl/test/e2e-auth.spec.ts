@@ -80,7 +80,7 @@ describe('Auth e2e', function () {
   let db;
   let client;
   let shell: TestShell;
-  let dbName;
+  let dbName: string;
   let examplePrivilege1;
   let examplePrivilege2;
 
@@ -149,7 +149,10 @@ describe('Auth e2e', function () {
           await assertUserAuth();
         });
         it('digestPassword', async function () {
-          if (process.env.MONGOSH_TEST_E2E_FORCE_FIPS) {
+          if (
+            process.env.MONGOSH_TEST_E2E_FORCE_FIPS ||
+            process.env.DISTRO_ID === 'rhel92-fips'
+          ) {
             return this.skip(); // No SCRAM-SHA-1 in FIPS mode
           }
           await shell.executeLine(`use ${dbName}`);
@@ -212,7 +215,10 @@ describe('Auth e2e', function () {
           shell.assertNoErrors();
         });
         it('digestPassword', async function () {
-          if (process.env.MONGOSH_TEST_E2E_FORCE_FIPS) {
+          if (
+            process.env.MONGOSH_TEST_E2E_FORCE_FIPS ||
+            process.env.DISTRO_ID === 'rhel92-fips'
+          ) {
             return this.skip(); // No SCRAM-SHA-1 in FIPS mode
           }
           await shell.executeLine(`use ${dbName}`);
@@ -843,9 +849,14 @@ describe('Auth e2e', function () {
       await assertUserAuth('pwd2', 'anna2');
     });
     it('can auth when there is login in URI', async function () {
-      const connectionString = await testServer.connectionString();
-      const split = connectionString.split('//');
-      const authConnectionString = `${split[0]}//anna2:pwd2@${split[1]}/${dbName}`;
+      const authConnectionString = await testServer.connectionString(
+        {},
+        {
+          username: 'anna2',
+          password: 'pwd2',
+          pathname: `/${dbName}`,
+        }
+      );
       shell = TestShell.start({ args: [authConnectionString] });
       await shell.waitForPrompt();
       shell.assertNoErrors();
@@ -862,9 +873,14 @@ describe('Auth e2e', function () {
       shell.assertNoErrors();
     });
     it('connection-resetting operations don’t undo auth', async function () {
-      const connectionString = await testServer.connectionString();
-      const split = connectionString.split('//');
-      const authConnectionString = `${split[0]}//anna2:pwd2@${split[1]}/${dbName}`;
+      const authConnectionString = await testServer.connectionString(
+        {},
+        {
+          username: 'anna2',
+          password: 'pwd2',
+          pathname: `/${dbName}`,
+        }
+      );
       shell = TestShell.start({ args: [authConnectionString] });
       await shell.waitForPrompt();
       shell.assertNoErrors();
@@ -920,7 +936,10 @@ describe('Auth e2e', function () {
     });
     context('with specific auth mechanisms', function () {
       it('can auth with SCRAM-SHA-1', async function () {
-        if (process.env.MONGOSH_TEST_E2E_FORCE_FIPS) {
+        if (
+          process.env.MONGOSH_TEST_E2E_FORCE_FIPS ||
+          process.env.DISTRO_ID === 'rhel92-fips'
+        ) {
           return this.skip(); // No SCRAM-SHA-1 in FIPS mode
         }
         const connectionString = await testServer.connectionString();
@@ -944,6 +963,29 @@ describe('Auth e2e', function () {
         shell.assertNoErrors();
       });
       it('provides a helpful error message for SCRAM-SHA-1 in FIPS mode', async function () {
+        {
+          // This test is not particularly meaningful if we're using the system OpenSSL installation
+          // and it is not properly configured for FIPS to begin with. This is the case on e.g.
+          // Ubuntu 22.04 in evergreen CI.
+          const preTestShell = TestShell.start({
+            args: [
+              '--quiet',
+              '--nodb',
+              '--tlsFIPSMode',
+              '--eval',
+              'tls.createSecureContext()',
+            ],
+          });
+          if (
+            (await preTestShell.waitForExit()) === 1 &&
+            preTestShell.output.includes(
+              'digital envelope routines::unsupported'
+            )
+          ) {
+            return this.skip();
+          }
+        }
+
         const connectionString = await testServer.connectionString();
         shell = TestShell.start({
           args: [
@@ -1065,6 +1107,7 @@ describe('Auth e2e', function () {
           'Miscellaneous failure (see text): Unable to find realm of host localhost',
           'Miscellaneous failure (see text): no credential for',
           "Unsupported mechanism 'GSSAPI' on authentication database '$external'",
+          'The specified target is unknown or unreachable',
         ];
         expect(messages.some((msg) => shell.output.includes(msg))).to.equal(
           true,

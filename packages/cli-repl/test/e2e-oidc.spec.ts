@@ -1,5 +1,5 @@
 import {
-  MlaunchSetup,
+  MongoRunnerSetup,
   skipIfApiStrict,
   skipIfEnvServerVersion,
 } from '../../../testing/integration-testing-hooks';
@@ -14,8 +14,8 @@ describe('OIDC auth e2e', function () {
 
   let getTokenPayload: typeof oidcMockProviderConfig.getTokenPayload;
   let tokenFetches: number;
-  let testServer: MlaunchSetup;
-  let testServer2: MlaunchSetup;
+  let testServer: MongoRunnerSetup;
+  let testServer2: MongoRunnerSetup;
   let oidcMockProviderConfig: OIDCMockProviderConfig;
   let oidcMockProvider: OIDCMockProvider;
   let shell: TestShell;
@@ -69,20 +69,22 @@ describe('OIDC auth e2e', function () {
       '--setParameter',
       'enableTestCommands=true',
     ];
-    testServer = new MlaunchSetup([
-      '--setParameter',
-      // weird quoting to work around mlaunch
-      `"'oidcIdentityProviders=${JSON.stringify([serverOidcConfig])}'"`,
-      ...commonOidcServerArgs,
-    ]);
-    testServer2 = new MlaunchSetup([
-      '--setParameter',
-      // weird quoting to work around mlaunch
-      `"'oidcIdentityProviders=${JSON.stringify([
-        { ...serverOidcConfig, clientId: 'testServer2' },
-      ])}'"`,
-      ...commonOidcServerArgs,
-    ]);
+    testServer = new MongoRunnerSetup({
+      args: [
+        '--setParameter',
+        `oidcIdentityProviders=${JSON.stringify([serverOidcConfig])}`,
+        ...commonOidcServerArgs,
+      ],
+    });
+    testServer2 = new MongoRunnerSetup({
+      args: [
+        '--setParameter',
+        `oidcIdentityProviders=${JSON.stringify([
+          { ...serverOidcConfig, clientId: 'testServer2' },
+        ])}`,
+        ...commonOidcServerArgs,
+      ],
+    });
     await Promise.all([testServer.start(), testServer2.start()]);
   });
 
@@ -133,6 +135,22 @@ describe('OIDC auth e2e', function () {
     shell = TestShell.start({
       args: [
         await testServer.connectionString(),
+        '--authenticationMechanism=MONGODB-OIDC',
+        '--oidcRedirectUri=http://localhost:0/',
+        `--browser=${fetchBrowserFixture}`,
+      ],
+    });
+    await shell.waitForPrompt();
+
+    await verifyUser(shell, 'testuser', 'testServer-group');
+    shell.assertNoErrors();
+  });
+
+  it('can successfully authenticate using OIDC Auth Code Flow when a username is specified', async function () {
+    shell = TestShell.start({
+      args: [
+        await testServer.connectionString(),
+        '--username=testuser',
         '--authenticationMechanism=MONGODB-OIDC',
         '--oidcRedirectUri=http://localhost:0/',
         `--browser=${fetchBrowserFixture}`,
@@ -217,9 +235,10 @@ describe('OIDC auth e2e', function () {
     await verifyUser(shell, 'testuser', 'testServer-group');
     await shell.executeLine('db.getMongo().setReadPref("primaryPreferred");');
     await verifyUser(shell, 'testuser', 'testServer-group');
-    await shell.executeLine(
-      `db = connect(${JSON.stringify(cs + '/?authMechanism=MONGODB-OIDC')})`
-    );
+    const cs2 = await testServer.connectionString({
+      authMechanism: 'MONGODB-OIDC',
+    });
+    await shell.executeLine(`db = connect(${JSON.stringify(cs2)})`);
     await verifyUser(shell, 'testuser', 'testServer-group');
     shell.assertNoErrors();
     expect(tokenFetches).to.equal(1);
@@ -237,8 +256,9 @@ describe('OIDC auth e2e', function () {
     await shell.waitForPrompt();
 
     await verifyUser(shell, 'testuser', 'testServer-group');
-    const cs2 =
-      (await testServer2.connectionString()) + '/?authMechanism=MONGODB-OIDC';
+    const cs2 = await testServer2.connectionString({
+      authMechanism: 'MONGODB-OIDC',
+    });
     await shell.executeLine(`db = connect(${JSON.stringify(cs2)})`);
     await verifyUser(shell, 'testuser', 'testServer2-group');
     shell.assertNoErrors();

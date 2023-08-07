@@ -3,15 +3,19 @@ set -x
 export BASEDIR="$PWD/.evergreen"
 export PATH="/cygdrive/c/python/Python311/Scripts:/cygdrive/c/python/Python311:/cygdrive/c/Python311/Scripts:/cygdrive/c/Python311:/opt/python/3.6/bin:$BASEDIR/mingit/cmd:$BASEDIR/mingit/mingw64/libexec/git-core:$BASEDIR/git-2:$BASEDIR/npm-8/node_modules/.bin:$BASEDIR/node-v$NODE_JS_VERSION-win-x64:/opt/java/jdk16/bin:/opt/chefdk/gitbin:/cygdrive/c/cmake/bin:/opt/mongodbtoolchain/v3/bin:$PATH"
 export IS_MONGOSH_EVERGREEN_CI=1
+export DEBUG="mongodb*,$DEBUG"
 
 if [ "$OS" != "Windows_NT" ]; then
   if which realpath; then # No realpath on macOS, but also not needed there
     export HOME="$(realpath "$HOME")" # Needed to de-confuse nvm when /home is a symlink
   fi
-  export NVM_DIR="$HOME/.nvm"
+  export NVM_DIR="$BASEDIR/.nvm"
   echo "Setting NVM environment home: $NVM_DIR"
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  set +x # nvm is very verbose
+  echo nvm use $NODE_JS_VERSION
   nvm use $NODE_JS_VERSION
+  set -x
   export PATH="$NVM_BIN:$PATH"
 
   export CC=gcc

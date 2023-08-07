@@ -331,49 +331,29 @@ class CliServiceProvider
   async getConnectionInfo(): Promise<ConnectionInfo> {
     const topology = this.getTopology();
     const { version } = require('../package.json');
-    const [
-      buildInfo = null,
-      cmdLineOptsOrServerError = null,
-      atlasVersion = null,
-      fcv = null,
-    ] = await Promise.all([
-      this.runCommandWithCheck(
-        'admin',
-        { buildInfo: 1 },
-        this.baseCmdOptions
-      ).catch(() => {}),
-      this.runCommandWithCheck(
-        'admin',
-        { getCmdLineOpts: 1 },
-        this.baseCmdOptions
-      ).catch((e) => {
-        // mongodb-build-info.getGenuineMongoDB expects either
-        // the successful or failure response from server
-        // Ref: https://github.com/mongodb-js/mongodb-build-info/blob/9247eeba730a905397ad09fe5a377067edc49b34/index.js#L89
-        return {
-          ok: e.ok,
-          code: e.code,
-          errmsg: e.message,
-          operationTime: e.operationTime,
-        };
-      }),
-      this.runCommandWithCheck(
-        'admin',
-        { atlasVersion: 1 },
-        this.baseCmdOptions
-      ).catch(() => {}),
-      this.runCommandWithCheck(
-        'admin',
-        { getParameter: 1, featureCompatibilityVersion: 1 },
-        this.baseCmdOptions
-      ).catch(() => {}),
-    ]);
+    const [buildInfo = null, atlasVersion = null, fcv = null] =
+      await Promise.all([
+        this.runCommandWithCheck(
+          'admin',
+          { buildInfo: 1 },
+          this.baseCmdOptions
+        ).catch(() => {}),
+        this.runCommandWithCheck(
+          'admin',
+          { atlasVersion: 1 },
+          this.baseCmdOptions
+        ).catch(() => {}),
+        this.runCommandWithCheck(
+          'admin',
+          { getParameter: 1, featureCompatibilityVersion: 1 },
+          this.baseCmdOptions
+        ).catch(() => {}),
+      ]);
 
     const extraConnectionInfo = getConnectInfo(
       this.uri?.toString() ?? '',
       version,
       buildInfo,
-      cmdLineOptsOrServerError,
       atlasVersion,
       topology
     );
@@ -1376,13 +1356,12 @@ class CliServiceProvider
     options?: Document,
     dbOptions?: DbOptions
   ): Promise<Document[]> {
-    return (
-      this.db(database, dbOptions)
-        .collection(collection)
-        // @ts-expect-error still @internal
-        .listSearchIndexes(indexName, options)
-        .toArray()
-    );
+    const col = this.db(database, dbOptions).collection(collection);
+    if (indexName === undefined) {
+      return col.listSearchIndexes(options).toArray();
+    } else {
+      return col.listSearchIndexes(indexName, options).toArray();
+    }
   }
 
   createSearchIndexes(
@@ -1392,12 +1371,9 @@ class CliServiceProvider
     specs: { name: string; definition: Document }[],
     dbOptions?: DbOptions
   ): Promise<string[]> {
-    return (
-      this.db(database, dbOptions)
-        .collection(collection)
-        // @ts-expect-error still @internal
-        .createSearchIndexes(specs)
-    );
+    return this.db(database, dbOptions)
+      .collection(collection)
+      .createSearchIndexes(specs);
   }
 
   dropSearchIndex(
@@ -1406,12 +1382,9 @@ class CliServiceProvider
     indexName: string,
     dbOptions?: DbOptions
   ): Promise<void> {
-    return (
-      this.db(database, dbOptions)
-        .collection(collection)
-        // @ts-expect-error still @internal
-        .dropSearchIndex(indexName)
-    );
+    return this.db(database, dbOptions)
+      .collection(collection)
+      .dropSearchIndex(indexName);
   }
 
   updateSearchIndex(
@@ -1422,12 +1395,9 @@ class CliServiceProvider
     definition: Document,
     dbOptions?: DbOptions
   ): Promise<void> {
-    return (
-      this.db(database, dbOptions)
-        .collection(collection)
-        // @ts-expect-error still @internal
-        .updateSearchIndex(indexName, definition)
-    );
+    return this.db(database, dbOptions)
+      .collection(collection)
+      .updateSearchIndex(indexName, definition);
   }
 }
 
