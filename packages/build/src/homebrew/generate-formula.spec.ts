@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai';
-import sinon from 'ts-sinon';
+import sinon from 'sinon';
 import type { GithubRepo } from '@mongodb-js/devtools-github-repo';
 import { generateUpdatedFormula } from './generate-formula';
 
@@ -40,7 +40,7 @@ describe('Homebrew generate-formula', function () {
 
   beforeEach(function () {
     getFileContent = sinon.stub();
-    getFileContent.withArgs('Formula/mongosh.rb', 'master').resolves({
+    getFileContent.withArgs('Formula/m/mongosh.rb', 'master').resolves({
       blobSha: 'blobSha',
       content: VALID_FORMULA,
     });

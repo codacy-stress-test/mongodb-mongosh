@@ -1,5 +1,5 @@
 import chai, { expect } from 'chai';
-import sinon from 'ts-sinon';
+import sinon from 'sinon';
 import { GithubRepo } from '@mongodb-js/devtools-github-repo';
 import { updateHomebrewFork } from './update-homebrew-fork';
 
@@ -30,7 +30,7 @@ describe('Homebrew update-homebrew-fork', function () {
   });
 
   it('writes updated formula and pushes changes', async function () {
-    getFileContent.rejects().withArgs('Formula/mongosh.rb').resolves({
+    getFileContent.rejects().withArgs('Formula/m/mongosh.rb').resolves({
       blobSha: 'sha1',
       content: 'old formula',
     });
@@ -53,7 +53,7 @@ describe('Homebrew update-homebrew-fork', function () {
       .withArgs(
         'mongosh 1.0.0',
         'sha1',
-        'Formula/mongosh.rb',
+        'Formula/m/mongosh.rb',
         'updated formula',
         'mongosh-1.0.0-sha'
       )
@@ -76,7 +76,7 @@ describe('Homebrew update-homebrew-fork', function () {
   });
 
   it('does not push changes if formula is same', async function () {
-    getFileContent.rejects().withArgs('Formula/mongosh.rb').resolves({
+    getFileContent.rejects().withArgs('Formula/m/mongosh.rb').resolves({
       blobSha: 'sha1',
       content: 'formula',
     });
