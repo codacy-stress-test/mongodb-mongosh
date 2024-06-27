@@ -7550,6 +7550,10 @@ functions:
           PACKAGE_VARIANT: ${package_variant}
           ARTIFACTORY_USERNAME: ${artifactory_username}
           ARTIFACTORY_PASSWORD: ${artifactory_password}
+          # for Silk SBOM integration
+          SILK_ASSET_GROUP: mongosh-${executable_os_id}
+          SILK_CLIENT_ID: ${silk_client_id}
+          SILK_CLIENT_SECRET: ${silk_client_secret}
   create_static_analysis_report:
     - command: s3.get
       params:
@@ -7908,8 +7912,10 @@ functions:
             cat .sbom/vulnerability-report.md
           fi
 
-          # Fails if the report failed and is not a patch, including during releases:
           if [[ "${is_patch}" != "true" ]]; then
+            # Run `snyk monitor` to keep `main` tracked
+            npx snyk monitor --org=dcd6db53-1532-4e65-beca-55db83f2cd52 --file=package-lock.json
+            # Fails if the report failed and is not a patch, including during releases:
             exit $return_code
           fi
 
@@ -16799,7 +16805,7 @@ tasks:
       - func: install
         vars:
           node_js_version: "20.12.2"
-      - func: create_static_analysis_report 
+      - func: create_static_analysis_report
         vars:
           node_js_version: "20.12.2"
 
