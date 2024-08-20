@@ -48,6 +48,11 @@ import { getOsInfo } from './get-os-info';
 import { UpdateNotificationManager } from './update-notification-manager';
 import { getTimingData, markTime, summariseTimingData } from './startup-timing';
 import type { IdPInfo } from 'mongodb';
+import type {
+  AgentWithInitialize,
+  DevtoolsProxyOptions,
+} from '@mongodb-js/devtools-proxy-support';
+import { useOrCreateAgent } from '@mongodb-js/devtools-proxy-support';
 
 /**
  * Connecting text key.
@@ -78,6 +83,12 @@ export type CliReplOptions = {
   input: Readable;
   /** The stream to write shell output to. */
   output: Writable;
+  /**
+   * The stream to write prompt output to when requesting data from user, like password.
+   * Helpful when user wants to redirect the output to a file or null device.
+   * If not provided, the `output` stream will be used.
+   */
+  promptOutput?: Writable;
   /** The set of home directory paths used by this shell instance. */
   shellHomePaths: ShellHomePaths;
   /** The ordered list of paths in which to look for a global configuration file. */
@@ -112,6 +123,7 @@ export class CliRepl implements MongoshIOProvider {
   logWriter?: MongoLogWriter;
   input: Readable;
   output: Writable;
+  promptOutput: Writable;
   analyticsOptions?: AnalyticsOptions;
   segmentAnalytics?: SegmentAnalytics;
   toggleableAnalytics: ToggleableAnalytics = new ToggleableAnalytics();
@@ -120,7 +132,11 @@ export class CliRepl implements MongoshIOProvider {
   closing = false;
   isContainerizedEnvironment = false;
   hasOnDiskTelemetryId = false;
-  updateNotificationManager = new UpdateNotificationManager();
+  proxyOptions: DevtoolsProxyOptions = {
+    useEnvironmentVariableProxies: true,
+  };
+  agent: AgentWithInitialize | undefined;
+  updateNotificationManager: UpdateNotificationManager;
   fetchMongoshUpdateUrlRegardlessOfCiEnvironment = false; // for testing
   cachedGlibcVersion: null | string | undefined = null;
 
@@ -132,6 +148,7 @@ export class CliRepl implements MongoshIOProvider {
     this.cliOptions = options.shellCliOptions;
     this.input = options.input;
     this.output = options.output;
+    this.promptOutput = options.promptOutput ?? options.output;
     this.analyticsOptions = options.analyticsOptions;
     this.onExit = options.onExit;
 
@@ -179,6 +196,10 @@ export class CliRepl implements MongoshIOProvider {
       onerror: (err: Error) => this.bus.emit('mongosh:error', err, 'log'),
       onwarn: (err: Error, path: string) =>
         this.warnAboutInaccessibleFile(err, path),
+    });
+    this.agent = useOrCreateAgent(this.proxyOptions);
+    this.updateNotificationManager = new UpdateNotificationManager({
+      proxyOptions: this.agent,
     });
 
     // We can't really do anything meaningful if the output stream is broken or
@@ -412,6 +433,7 @@ export class CliRepl implements MongoshIOProvider {
         installdir: this.shellHomeDirectory.roamingPath('snippets'),
         instanceState: this.mongoshRepl.runtimeState().instanceState,
         skipInitialIndexLoad: !willEnterInteractiveMode,
+        proxyOptions: this.agent,
       });
     }
 
@@ -743,7 +765,7 @@ export class CliRepl implements MongoshIOProvider {
     try {
       let config: CliUserConfig;
       if (fileContents.trim().startsWith('{')) {
-        config = bson.EJSON.parse(fileContents) as any;
+        config = bson.EJSON.parse(fileContents);
       } else {
         config = (yaml.load(fileContents) as any)?.mongosh ?? {};
       }
@@ -1003,22 +1025,19 @@ export class CliRepl implements MongoshIOProvider {
 
   /**
    * Require the user to enter a password.
-   *
-   * @param {string} driverUrl - The driver URI.
-   * @param {DevtoolsConnectOptions} driverOptions - The driver options.
    */
   async requirePassword(): Promise<string> {
     const passwordPromise = askpassword({
       input: this.input,
-      output: this.output,
+      output: this.promptOutput,
       replacementCharacter: '*',
     });
-    this.output.write('Enter password: ');
+    this.promptOutput.write('Enter password: ');
     try {
       try {
         return (await passwordPromise).toString();
       } finally {
-        this.output.write('\n');
+        this.promptOutput.write('\n');
       }
     } catch (error: any) {
       await this._fatalError(error);
@@ -1041,6 +1060,7 @@ export class CliRepl implements MongoshIOProvider {
     if (this.closing) {
       return;
     }
+    this.agent?.destroy();
     if (!this.output.destroyed) {
       // Wait for output to be fully flushed before exiting.
       if (this.output.writableEnded) {
@@ -1169,24 +1189,8 @@ export class CliRepl implements MongoshIOProvider {
           )}\nWaiting...\n`
       );
     };
-    if (process.env.MONGOSH_EXPERIMENTAL_OIDC_PROXY_SUPPORT) {
-      const ProxyAgent = (await import('proxy-agent')).ProxyAgent;
-      const tlsCAFile =
-        driverOptions.tlsCAFile ??
-        new ConnectionString(driverUri)
-          .typedSearchParams<DevtoolsConnectOptions>()
-          .get('tlsCAFile');
-      const ca = tlsCAFile ? await fs.readFile(tlsCAFile) : undefined;
-      driverOptions.oidc.customHttpOptions = (_url, opts) => {
-        if (ca && !opts.ca) {
-          opts = { ...opts, ca };
-        }
-        return {
-          ...opts,
-          agent: new ProxyAgent({ ...opts }),
-        };
-      };
-    }
+    driverOptions.proxy ??= this.proxyOptions;
+    driverOptions.applyProxyToOIDC ??= true;
 
     const [redirectURI, trustedEndpoints, browser] = await Promise.all([
       this.getConfig('oidcRedirectURI'),
