@@ -1,6 +1,12 @@
 
 exec_timeout_secs: 10800
 
+pre:
+  - command: shell.exec
+    params:
+      shell: bash
+      script: |
+        rm -rf "$HOME/.mongodb/mongosh"
 post_error_fails_task: true
 post:
   - command: shell.exec
@@ -8525,7 +8531,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_cli_repl"
@@ -8542,7 +8548,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_cli_repl"
@@ -8746,7 +8752,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_cli_repl"
@@ -8763,7 +8769,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_cli_repl"
@@ -9001,7 +9007,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_e2e_tests"
@@ -9018,7 +9024,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_e2e_tests"
@@ -9222,7 +9228,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_e2e_tests"
@@ -9239,7 +9245,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_e2e_tests"
@@ -9579,7 +9585,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_java_shell"
@@ -9596,7 +9602,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_java_shell"
@@ -9800,7 +9806,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_java_shell"
@@ -9817,7 +9823,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_java_shell"
@@ -10089,7 +10095,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_mongosh"
@@ -10106,7 +10112,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_mongosh"
@@ -10310,7 +10316,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_mongosh"
@@ -10327,7 +10333,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_mongosh"
@@ -10531,7 +10537,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_node_runtime_worker_thread"
@@ -10548,7 +10554,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_node_runtime_worker_thread"
@@ -10752,7 +10758,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_node_runtime_worker_thread"
@@ -10769,7 +10775,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_node_runtime_worker_thread"
@@ -11007,7 +11013,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_service_provider_server"
@@ -11024,7 +11030,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_service_provider_server"
@@ -11228,7 +11234,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_service_provider_server"
@@ -11245,7 +11251,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_service_provider_server"
@@ -11449,7 +11455,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n20_shell_api"
@@ -11466,7 +11472,7 @@ tasks:
           node_js_version: "20.17.0"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "20.17.0"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n20_shell_api"
@@ -11670,7 +11676,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17"
+          mongosh_server_test_version: "8.0.x"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xc_n16_shell_api"
@@ -11687,7 +11693,7 @@ tasks:
           node_js_version: "16.20.2"
       - func: test
         vars:
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "8.0.x-enterprise"
           node_js_version: "16.20.2"
           mongosh_skip_node_version_check: ""
           mongosh_test_id: "m80xe_n16_shell_api"
@@ -11930,7 +11936,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_darwin_x64_800rc17_fips
+  - name: e2e_tests_darwin_x64_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -11946,10 +11952,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_darwin_x64_800rc17
+  - name: e2e_tests_darwin_x64_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -11965,7 +11971,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_darwin_x64_60x_fips
@@ -12058,7 +12064,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_darwin_arm64_800rc17_fips
+  - name: e2e_tests_darwin_arm64_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12074,10 +12080,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_darwin_arm64_800rc17
+  - name: e2e_tests_darwin_arm64_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12093,7 +12099,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_darwin_arm64_60x_fips
@@ -12186,7 +12192,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_x64_800rc17_fips
+  - name: e2e_tests_linux_x64_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12202,10 +12208,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_x64_800rc17
+  - name: e2e_tests_linux_x64_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12221,7 +12227,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_x64_60x_fips
@@ -12314,7 +12320,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_x64_openssl11_800rc17_fips
+  - name: e2e_tests_linux_x64_openssl11_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12330,10 +12336,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_x64_openssl11_800rc17
+  - name: e2e_tests_linux_x64_openssl11_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12349,7 +12355,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_x64_openssl11_60x_fips
@@ -12442,7 +12448,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_x64_openssl3_800rc17_fips
+  - name: e2e_tests_linux_x64_openssl3_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12458,10 +12464,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_x64_openssl3_800rc17
+  - name: e2e_tests_linux_x64_openssl3_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12477,7 +12483,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_x64_openssl3_60x_fips
@@ -12570,7 +12576,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_arm64_800rc17_fips
+  - name: e2e_tests_linux_arm64_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12586,10 +12592,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_arm64_800rc17
+  - name: e2e_tests_linux_arm64_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12605,7 +12611,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_arm64_60x_fips
@@ -12698,7 +12704,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_arm64_openssl11_800rc17_fips
+  - name: e2e_tests_linux_arm64_openssl11_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12714,10 +12720,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_arm64_openssl11_800rc17
+  - name: e2e_tests_linux_arm64_openssl11_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12733,7 +12739,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_arm64_openssl11_60x_fips
@@ -12826,7 +12832,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_arm64_openssl3_800rc17_fips
+  - name: e2e_tests_linux_arm64_openssl3_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12842,10 +12848,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_arm64_openssl3_800rc17
+  - name: e2e_tests_linux_arm64_openssl3_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12861,7 +12867,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_arm64_openssl3_60x_fips
@@ -12954,7 +12960,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_ppc64le_800rc17_fips
+  - name: e2e_tests_linux_ppc64le_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12970,10 +12976,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_ppc64le_800rc17
+  - name: e2e_tests_linux_ppc64le_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -12989,7 +12995,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_ppc64le_60x_fips
@@ -13082,7 +13088,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_s390x_800rc17_fips
+  - name: e2e_tests_linux_s390x_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -13098,10 +13104,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_linux_s390x_800rc17
+  - name: e2e_tests_linux_s390x_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -13117,7 +13123,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_linux_s390x_60x_fips
@@ -13210,7 +13216,7 @@ tasks:
           mongosh_server_test_version: "stable-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_win32_800rc17_fips
+  - name: e2e_tests_win32_70x_fips
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -13226,10 +13232,10 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: "1"
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
-  - name: e2e_tests_win32_800rc17
+  - name: e2e_tests_win32_70x
     tags: ["e2e-test"]
     depends_on:
       - name: compile_artifact
@@ -13245,7 +13251,7 @@ tasks:
       - func: run_e2e_tests
         vars:
           node_js_version: "20.17.0"
-          mongosh_server_test_version: "8.0.0-rc17-enterprise"
+          mongosh_server_test_version: "7.0.x-enterprise"
           mongosh_test_e2e_force_fips: ""
           disable_openssl_shared_config_for_bundled_openssl: ${disable_openssl_shared_config_for_bundled_openssl|false}
   - name: e2e_tests_win32_60x_fips
@@ -17788,13 +17794,13 @@ buildvariants:
     run_on: rhel70-large
     tags: ["nightly-driver"]
     tasks:
-      - name: e2e_tests_linux_x64
+      - name: e2e_tests_linux_x64_70x
   - name: e2e_rhel76_x64
     display_name: "RHEL 7.6 x64 (E2E Tests)"
     run_on: rhel76-large
     tags: ["nightly-driver"]
     tasks:
-      - name: e2e_tests_linux_x64
+      - name: e2e_tests_linux_x64_70x
   - name: e2e_rhel80_x64
     display_name: "RHEL 8.0 x64 (E2E Tests)"
     run_on: rhel80-small
@@ -17808,6 +17814,14 @@ buildvariants:
       disable_openssl_shared_config_for_bundled_openssl: true
     tags: ["nightly-driver"]
     tasks:
+      - name: e2e_tests_linux_x64_70x
+  - name: e2e_rhel93_x64
+    display_name: "RHEL 9.3 x64 (E2E Tests)"
+    run_on: rhel93-small
+    expansions:
+      disable_openssl_shared_config_for_bundled_openssl: true
+    tags: ["nightly-driver"]
+    tasks:
       - name: e2e_tests_linux_x64
   - name: e2e_rhel83_x64
     display_name: "RHEL 8.3 x64 (E2E Tests, FIPS-available OS)"
@@ -17817,9 +17831,9 @@ buildvariants:
       - name: e2e_tests_linux_x64
       - name: e2e_tests_linux_x64_openssl11
       - name: e2e_tests_linux_x64_openssl11_fips
-  - name: e2e_rhel92_x64
-    display_name: "RHEL 9.2 x64 (E2E Tests, FIPS-available OS)"
-    run_on: rhel92-fips
+  - name: e2e_rhel93_fips_x64
+    display_name: "RHEL 9.3 x64 (E2E Tests, FIPS-available OS)"
+    run_on: rhel93-fips
     tags: ["nightly-driver"]
     tasks:
       - name: e2e_tests_linux_x64
@@ -17850,8 +17864,8 @@ buildvariants:
     run_on: ubuntu2404-small
     tags: ["nightly-driver"]
     tasks:
-      - name: e2e_tests_linux_x64_800rc17
-      - name: e2e_tests_linux_x64_openssl3_800rc17
+      - name: e2e_tests_linux_x64
+      - name: e2e_tests_linux_x64_openssl3
   - name: e2e_debian10_x64
     display_name: "Debian 10 x64 (E2E Tests)"
     run_on: debian10-small
@@ -17864,14 +17878,14 @@ buildvariants:
     run_on: debian11-small
     tags: ["nightly-driver"]
     tasks:
-      - name: e2e_tests_linux_x64
-      - name: e2e_tests_linux_x64_openssl11
+      - name: e2e_tests_linux_x64_70x
+      - name: e2e_tests_linux_x64_openssl11_70x
   - name: e2e_amazon2_x64
     display_name: "Amazon Linux 2 x64 (E2E Tests)"
     run_on: amazon2-large
     tags: ["nightly-driver"]
     tasks:
-      - name: e2e_tests_linux_x64
+      - name: e2e_tests_linux_x64_70x
   - name: e2e_amazon2023_x64
     display_name: "Amazon Linux 2023 x64 (E2E Tests)"
     run_on: amazon2023.0-small
@@ -17885,7 +17899,7 @@ buildvariants:
     run_on: suse12-sp5-large
     tags: ["nightly-driver"]
     tasks:
-      - name: e2e_tests_linux_x64
+      - name: e2e_tests_linux_x64_70x
   - name: e2e_suse15_x64
     display_name: "SLES 15 x64 (E2E Tests)"
     run_on: suse15sp4-small
@@ -17913,13 +17927,13 @@ buildvariants:
     display_name: "Ubuntu 24.04 arm64 (E2E Tests)"
     run_on: ubuntu2404-arm64-small
     tasks:
-      - name: e2e_tests_linux_arm64_800rc17
-      - name: e2e_tests_linux_arm64_openssl3_800rc17
+      - name: e2e_tests_linux_arm64
+      - name: e2e_tests_linux_arm64_openssl3
   - name: e2e_amazon2_arm64
     display_name: "Amazon Linux 2 arm64 (E2E Tests)"
     run_on: amazon2-arm64-large
     tasks:
-      - name: e2e_tests_linux_arm64
+      - name: e2e_tests_linux_arm64_70x
   - name: e2e_amazon2023_arm64
     display_name: "Amazon Linux 2023 arm64 (E2E Tests)"
     run_on: amazon2023.0-arm64-small
@@ -17935,6 +17949,14 @@ buildvariants:
   - name: e2e_rhel90_arm64
     display_name: "RHEL 9.0 arm64 (E2E Tests)"
     run_on: rhel90-arm64-small
+    expansions:
+      disable_openssl_shared_config_for_bundled_openssl: true
+    tasks:
+      - name: e2e_tests_linux_arm64_70x
+      - name: e2e_tests_linux_arm64_openssl3_70x
+  - name: e2e_rhel93_arm64
+    display_name: "RHEL 9.3 arm64 (E2E Tests)"
+    run_on: rhel93-arm64-small
     expansions:
       disable_openssl_shared_config_for_bundled_openssl: true
     tasks:
