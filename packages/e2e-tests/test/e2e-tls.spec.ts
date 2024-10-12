@@ -165,7 +165,7 @@ describe('e2e TLS', function () {
         const result = await shell.waitForPromptOrExit();
         expect(result.state).to.equal('exit');
         shell.assertContainsOutput(
-          /unable to verify the first certificate|self[- ]signed certificate in certificate chain/
+          /unable to verify the first certificate|self[- ]signed certificate in certificate chain|unable to get (local )?issuer certificate/
         );
       });
 
@@ -182,7 +182,7 @@ describe('e2e TLS', function () {
         const result = await shell.waitForPromptOrExit();
         expect(result.state).to.equal('exit');
         shell.assertContainsOutput(
-          /unable to verify the first certificate|self[- ]signed certificate in certificate chain/
+          /unable to verify the first certificate|self[- ]signed certificate in certificate chain|unable to get (local )?issuer certificate/
         );
       });
 
@@ -476,6 +476,41 @@ describe('e2e TLS', function () {
       });
       const prompt = await shell.waitForPromptOrExit();
       expect(prompt.state).to.equal('prompt');
+      expect(
+        await shell.executeLine('db.runCommand({ connectionStatus: 1 })')
+      ).to.include(`user: '${certUser}'`);
+
+      expect(
+        await shell.executeLine(
+          'db.getSiblingDB("$external").auth({mechanism: "MONGODB-X509"})'
+        )
+      ).to.include('ok: 1');
+      expect(
+        await shell.executeLine('db.runCommand({ connectionStatus: 1 })')
+      ).to.include(`user: '${certUser}'`);
+
+      const logPath = path.join(logBasePath, `${shell.logId}_log`);
+      const logFileContents = await fs.readFile(logPath, 'utf8');
+      expect(logFileContents).not.to.include(CLIENT_CERT_PASSWORD);
+    });
+
+    it('asks for tlsCertificateKeyFilePassword when it is needed (connection string, encrypted)', async function () {
+      const shell = this.startTestShell({
+        args: [
+          await connectionStringWithLocalhost(server, {
+            serverSelectionTimeoutMS: '1500',
+            authMechanism: 'MONGODB-X509',
+            tls: 'true',
+            tlsCAFile: CA_CERT,
+            tlsCertificateKeyFile: CLIENT_CERT_ENCRYPTED,
+          }),
+        ],
+        env,
+      });
+
+      await shell.waitForLine(/Enter TLS key file password:/);
+      await shell.executeLine(CLIENT_CERT_PASSWORD);
+
       expect(
         await shell.executeLine('db.runCommand({ connectionStatus: 1 })')
       ).to.include(`user: '${certUser}'`);
