@@ -92,6 +92,7 @@ const translations: Catalog = {
         'Use ID tokens in place of access tokens for auth',
       oidcDumpTokens:
         "Debug OIDC by printing tokens to mongosh's output [full|include-secrets]",
+      oidcNoNonce: "Don't send a nonce argument in the OIDC auth request",
     },
     'arg-parser': {
       'unknown-option': 'Error parsing command line: unrecognized option:',
@@ -128,7 +129,7 @@ const translations: Catalog = {
   },
   'service-provider-browser': {},
   'service-provider-core': {},
-  'service-provider-server': {},
+  'service-provider-node-driver': {},
   'shell-api': {
     classes: {
       ShellApi: {
@@ -2770,6 +2771,9 @@ const translations: Catalog = {
             stats: {
               description:
                 'Return stats captured from a named stream processor.',
+            },
+            modify: {
+              description: 'Modify a stream processor definition.',
             },
           },
         },

@@ -69,6 +69,7 @@ if ((v8 as any)?.startupSnapshot?.isBuildingSnapshot?.()) {
 // eslint-disable-next-line complexity
 async function main() {
   markTime(TimingCategories.Main, 'entered main');
+  suppressExperimentalWarnings();
   if (process.env.MONGOSH_RUN_NODE_SCRIPT) {
     // For uncompiled mongosh: node /path/to/this/file script ... -> node script ...
     // FOr compiled mongosh: mongosh mongosh script ... -> mongosh script ...
@@ -231,9 +232,7 @@ async function main() {
         process.env.TEST_USE_STDOUT_FOR_PASSWORD || process.stdout.isTTY
           ? process.stdout
           : process.stderr,
-      // Node.js 20.0.0 made p.exit(undefined) behave as p.exit(0) rather than p.exit()
-      onExit: (code?: number | undefined) =>
-        code === undefined ? process.exit() : process.exit(code),
+      onExit,
       shellHomePaths: shellHomePaths,
       globalConfigPaths: globalConfigPaths,
     });
@@ -309,5 +308,56 @@ async function ask(prompt: string): Promise<string> {
     return ''; // Unreachable
   } finally {
     process.stdin.unpipe(stdinCopy);
+  }
+}
+
+/**
+ * Helper to suppress experimental warnings emitted by node if necessary.
+ *
+ * In Node.js 23 require()ing ESM modules will work, but emit an experimental warning like
+ * CommonJS module ABC is loading ES Module XYZ using require(). This is causing problems for
+ * the way we import fetch - see relevant comments here:
+ * https://github.com/mongodb-js/devtools-shared/blob/29ceeb5f51d29883d4a69c83e68ad37b0965d49e/packages/devtools-proxy-support/src/fetch.ts#L12-L17
+ */
+function suppressExperimentalWarnings() {
+  const nodeMajorVersion = process.versions.node.split('.').map(Number)[0];
+  if (nodeMajorVersion >= 23) {
+    const originalEmit = process.emitWarning;
+    process.emitWarning = (warning, ...args: any[]): void => {
+      if (args[0] === 'ExperimentalWarning') {
+        return;
+      }
+
+      if (
+        typeof args[0] === 'object' &&
+        args[0].type === 'ExperimentalWarning'
+      ) {
+        return;
+      }
+
+      return originalEmit(warning, ...args);
+    };
+  }
+}
+
+function onExit(code?: number): never {
+  // Node.js 20.0.0 made p.exit(undefined) behave as p.exit(0) rather than p.exit(): (code?: number | undefined): never => {
+  try {
+    try {
+      if (code === undefined) process.exit();
+      else process.exit(code);
+    } finally {
+      if (code === undefined) process.exit();
+      else process.exit(code);
+    }
+  } catch (err) {
+    process.stderr.write(String(err) + '\n');
+  } finally {
+    // Should never be reachable anyway, but nyc monkey-patches process.exit()
+    // internals so that it can always write coverage files as part of the application
+    // shutdown, and that can throw an exception if the filesystem call to write
+    // the coverage file fails.
+    process.stderr.write('process.exit() returned -- aborting\n');
+    process.abort();
   }
 }

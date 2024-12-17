@@ -17,7 +17,7 @@
     "node": ">=14.15.1"
   },
   "scripts": {
-    "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 15000 -r ts-node/register \"./src/**/*.spec.ts\"",
+    "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 15000 -r ts-node/register --reporter \"../../configs/mocha-config-mongosh/reporter.ts\" \"./src/**/*.spec.ts\"",
     "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
     "test-coverage": "nyc --no-clean --cwd ../.. --reporter=none npm run test",
     "test-ci-coverage": "nyc --no-clean --cwd ../.. --reporter=none npm run test-ci",
@@ -27,7 +27,7 @@
     "depcheck": "depcheck",
     "compile": "tsc -p tsconfig.json",
     "prepublish": "npm run compile",
-    "generate-error-overview": "ts-node scripts/extract-errors.ts .. ../../error-overview.md ../../error-overview.rst",
+    "generate-error-overview": "ts-node scripts/extract-errors.ts .. generated/error-overview.md generated/error-overview.rst && npm run reformat",
     "prettier": "prettier",
     "reformat": "npm run prettier -- --write . && npm run eslint --fix"
   },

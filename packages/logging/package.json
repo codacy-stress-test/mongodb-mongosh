@@ -17,7 +17,7 @@
     "node": ">=14.15.1"
   },
   "dependencies": {
-    "@mongodb-js/devtools-connect": "^3.3.0",
+    "@mongodb-js/devtools-connect": "^3.3.4",
     "@mongosh/errors": "0.0.0-dev.0",
     "@mongosh/history": "0.0.0-dev.0",
     "@mongosh/types": "0.0.0-dev.0",
@@ -33,7 +33,7 @@
     "prettier": "^2.8.8"
   },
   "scripts": {
-    "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 15000 -r ts-node/register \"./src/**/*.spec.ts\"",
+    "test": "mocha -r \"../../scripts/import-expansions.js\" --timeout 15000 -r ts-node/register --reporter \"../../configs/mocha-config-mongosh/reporter.ts\" \"./src/**/*.spec.ts\"",
     "test-ci": "node ../../scripts/run-if-package-requested.js npm test",
     "test-coverage": "nyc --no-clean --cwd ../.. --reporter=none npm run test",
     "test-ci-coverage": "nyc --no-clean --cwd ../.. --reporter=none npm run test-ci",
